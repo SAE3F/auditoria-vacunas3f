@@ -736,13 +736,19 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
 
         self.send_error(HTTPStatus.NOT_FOUND, "Acción POST no encontrada")
 
-def iniciar_servidor(puerto=PUERTO):
+def iniciar_servidor(puerto=None):
+    if puerto is None:
+        puerto = int(os.environ.get("PORT", 8080))
+
     try:
-        cargar_padron_a_bd()
+        if PADRON_JARDINES_PATH and Path(PADRON_JARDINES_PATH).exists():
+            cargar_padron_a_bd()
     except Exception as e:
         print(f"⚠️ Aviso al cargar padrón base: {e} (Continuando con la BD existente)")
+
+    print(f"🚀 Iniciando servidor HTTP en 0.0.0.0:{puerto} (PORT={os.environ.get('PORT')})...")
     servidor = HTTPServer(("0.0.0.0", puerto), VacunacionAPIHandler)
-    print(f"🚀 Servidor de Auditoría de Vacunas iniciado en http://0.0.0.0:{puerto}")
+    print(f"✅ Servidor de Auditoría de Vacunas escuchando exitosamente en http://0.0.0.0:{puerto}")
     servidor.serve_forever()
 
 if __name__ == "__main__":
