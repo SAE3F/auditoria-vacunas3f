@@ -5,3 +5,5 @@ __pycache__/
 env/
 ejemplos_descargados/
 resultados_auditoria/*.xlsx
+certificados_descargados/
+cloudflared.exe

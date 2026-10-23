@@ -35,8 +35,9 @@ URL_LOGIN = "https://backend.mistramites.tresdefebrero.gob.ar/"
 URL_TRAMITE = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod={}"
 URL_DOC_DOWNLOAD = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo={}&seccion={}&tramiteproductora={}"
 
-CUIL_DEFAULT = "27388808611"
-PASSWORD_DEFAULT = "Municipalidad1234"
+CUIL_DEFAULT = os.environ.get("MI3F_CUIL", "27388808611")
+PASSWORD_DEFAULT = os.environ.get("MI3F_PASSWORD", "Municipalidad1234")
+MI3F_PHPSESSID = os.environ.get("MI3F_PHPSESSID", "")
 
 # Archivo de sesión compartida
 ARCHIVO_SESION = os.environ.get("ARCHIVO_SESION")

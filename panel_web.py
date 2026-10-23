@@ -77,39 +77,85 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(contenido)
                 return
 
-        # Servir imágenes locales de certificados (con renderizado al vuelo para PDFs)
+        # Servir imágenes de certificados (desde disco local o proxy directo desde Mi3F al vuelo)
         if path.startswith("/api/imagen/"):
             nombre_archivo = urllib.parse.unquote(path.replace("/api/imagen/", ""))
             ruta_img = DIR_CERTIFICADOS / nombre_archivo
+            data = None
+            mime = "image/jpeg"
+            ext = Path(nombre_archivo).suffix.lower()
+
+            # 1. Si existe en disco local
             if ruta_img.exists() and ruta_img.is_file():
-                ext = ruta_img.suffix.lower()
-                
-                # Si es un PDF, renderizamos la primera página como JPEG de alta resolución
                 if ext == ".pdf":
                     try:
                         import fitz
                         doc = fitz.open(ruta_img)
                         if len(doc) > 0:
-                            pag = doc[0]
-                            # Renderizar a 150 DPI para nitidez visual en el visor
-                            pix = pag.get_pixmap(dpi=150)
+                            pix = doc[0].get_pixmap(dpi=150)
                             data = pix.tobytes("jpeg")
                             mime = "image/jpeg"
                             doc.close()
-                        else:
-                            doc.close()
-                            self.send_error(HTTPStatus.NOT_FOUND, "PDF vacío")
-                            return
                     except Exception as err_pdf:
                         print(f"Error renderizando PDF {ruta_img}: {err_pdf}")
-                        self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Error renderizando PDF")
-                        return
                 else:
-                    mime = "image/jpeg"
                     if ext == ".png": mime = "image/png"
                     with open(ruta_img, "rb") as f:
                         data = f.read()
 
+            # 2. Si no está en disco local, obtener por proxy directo desde Mi3F usando metadatos en BD
+            if data is None:
+                try:
+                    with sqlite3.connect(DB_PATH) as conn:
+                        conn.row_factory = sqlite3.Row
+                        c = conn.cursor()
+                        c.execute("SELECT * FROM archivos_certificados WHERE nombre_archivo = ? OR ruta_local LIKE ?", 
+                                  (nombre_archivo, f"%{nombre_archivo}%"))
+                        doc_info = c.fetchone()
+
+                        # Si no está en la tabla archivos_certificados, intentar buscar por código de trámite
+                        if not doc_info and "_" in nombre_archivo:
+                            cod_tramite = nombre_archivo.split("_")[0]
+                            ses = obtener_sesion_requests()
+                            descargar_certificado_tramite(ses, cod_tramite)
+                            c.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ? LIMIT 1", (cod_tramite,))
+                            doc_info = c.fetchone()
+
+                    if doc_info:
+                        cod_doc = doc_info["codigo_doc"]
+                        sec = doc_info["seccion"] or "243"
+                        cod_tra = doc_info["codigo_tramite"]
+                        url_download = f"https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo={cod_doc}&seccion={sec}&tramiteproductora={cod_tra}"
+                        
+                        ses = obtener_sesion_requests()
+                        resp_proxy = ses.get(url_download, timeout=20, verify=False)
+                        if resp_proxy.status_code == 200 and len(resp_proxy.content) > 100:
+                            raw_bytes = resp_proxy.content
+                            
+                            # Si es un PDF, renderizar en memoria como JPEG
+                            if ext == ".pdf" or raw_bytes.startswith(b"%PDF"):
+                                import fitz
+                                doc = fitz.open(stream=raw_bytes, filetype="pdf")
+                                if len(doc) > 0:
+                                    pix = doc[0].get_pixmap(dpi=150)
+                                    data = pix.tobytes("jpeg")
+                                    mime = "image/jpeg"
+                                    doc.close()
+                            else:
+                                data = raw_bytes
+                                if ext == ".png": mime = "image/png"
+                                else: mime = "image/jpeg"
+
+                            # Cachear en disco para que las siguientes vistas sean inmediatas
+                            try:
+                                with open(ruta_img, "wb") as f_cache:
+                                    f_cache.write(raw_bytes)
+                            except Exception:
+                                pass
+                except Exception as e_proxy:
+                    print(f"Error obteniendo documento via proxy Mi3F: {e_proxy}")
+
+            if data:
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", mime)
                 self.send_header("Content-Length", str(len(data)))
@@ -117,7 +163,7 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(data)
                 return
             else:
-                self.send_error(HTTPStatus.NOT_FOUND, "Imagen no encontrada")
+                self.send_error(HTTPStatus.NOT_FOUND, "Imagen no encontrada ni disponible en Mi3F")
                 return
 
         # API: Métricas generales
@@ -233,6 +279,17 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
 
                 cursor.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (codigo,))
                 archivos = [dict(r) for r in cursor.fetchall()]
+
+                # Si no tiene archivos registrados aún en BD, intentar sincronizar al vuelo desde Mi3F
+                if not archivos:
+                    try:
+                        ses = obtener_sesion_requests()
+                        descargados = descargar_certificado_tramite(ses, codigo)
+                        if descargados:
+                            cursor.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (codigo,))
+                            archivos = [dict(r) for r in cursor.fetchall()]
+                    except Exception as err_sync:
+                        print(f"Aviso sync al vuelo para tramite {codigo}: {err_sync}")
 
                 cursor.execute("SELECT * FROM auditoria_vacunas WHERE codigo_tramite = ?", (codigo,))
                 auditoria = cursor.fetchone()

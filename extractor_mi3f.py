@@ -18,7 +18,7 @@ from typing import List, Dict, Optional, Any
 from config import (
     DIR_CERTIFICADOS, DB_PATH, PADRON_JARDINES_PATH,
     URL_LOGIN, URL_TRAMITE, URL_DOC_DOWNLOAD, ARCHIVO_SESION,
-    CUIL_DEFAULT, PASSWORD_DEFAULT
+    CUIL_DEFAULT, PASSWORD_DEFAULT, MI3F_PHPSESSID
 )
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -97,13 +97,19 @@ def obtener_sesion_requests() -> requests.Session:
         "Connection": "keep-alive"
     })
     
+    # 1. Prioridad: Variable de entorno en la nube (Render)
+    if MI3F_PHPSESSID:
+        session.cookies.set("PHPSESSID", MI3F_PHPSESSID, domain="backend.mistramites.tresdefebrero.gob.ar")
+        return session
+
+    # 2. Archivo de sesión local
     if ARCHIVO_SESION.exists():
         try:
             with open(ARCHIVO_SESION, "r", encoding="utf-8") as f:
                 data = json.load(f)
             session.headers.update({"User-Agent": data.get("user_agent", "Mozilla/5.0")})
             for cookie in data.get("cookies", []):
-                session.cookies.set(cookie["name"], cookie["value"])
+                session.cookies.set(cookie["name"], cookie["value"], domain=cookie.get("domain", "backend.mistramites.tresdefebrero.gob.ar"))
             
             # Test rápido de validez
             r = session.get(URL_LOGIN, timeout=8, verify=False)
@@ -112,8 +118,12 @@ def obtener_sesion_requests() -> requests.Session:
         except Exception:
             pass
             
-    # Si la sesión no es válida, autenticar con Selenium
-    return autenticar_selenium()
+    # Si la sesión no es válida y estamos en un entorno con Chrome, autenticar con Selenium
+    try:
+        return autenticar_selenium()
+    except Exception as e:
+        print(f"Aviso autenticacion Selenium no disponible: {e}")
+        return session
 
 def autenticar_selenium() -> requests.Session:
     """Inicia sesión automatizada en SSO Tres de Febrero y guarda cookies."""
