@@ -754,6 +754,16 @@
             </a>
           </div>
           <div class="image-viewport" id="viewport-imagen">
+            <div id="img-loading-spinner" class="oculto" style="color: #fff; text-align: center;">
+              <span class="spinner" style="width: 28px; height: 28px; border-width: 3px; border-top-color: #38BDF8; margin-bottom: 10px;"></span>
+              <p style="font-size: 13px; color: #94A3B8;">Obteniendo certificado desde Mi3F...</p>
+            </div>
+            <div id="img-error-box" class="oculto" style="color: #FCA5A5; text-align: center; max-width: 320px; padding: 20px;">
+              <div style="font-size: 32px; margin-bottom: 8px;">⚠️</div>
+              <strong style="display: block; margin-bottom: 6px; font-size: 14px;">No se pudo cargar el certificado</strong>
+              <p style="font-size: 12px; color: #CBD5E1; margin-bottom: 12px;">Verifique que la sesión en Mi3F (MI3F_PHPSESSID) esté activa o acceda directamente al trámite:</p>
+              <a id="btn-reintentar-mi3f" href="#" target="_blank" class="btn btn-sm btn-blanco">↗️ Ver en Mi3F</a>
+            </div>
             <img id="img-carnet" src="" alt="Certificado de vacunación">
           </div>
         </div>
@@ -1096,15 +1106,41 @@
 
       // Configurar imagen
       const imgEl = document.getElementById('img-carnet');
+      const spinnerEl = document.getElementById('img-loading-spinner');
+      const errorBoxEl = document.getElementById('img-error-box');
+      const btnReintentarMi3F = document.getElementById('btn-reintentar-mi3f');
+
+      if (btnReintentarMi3F) {
+        btnReintentarMi3F.href = `https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=${codigo}`;
+      }
+
       const esPdf = archivos && archivos.length > 0 && archivos[0].nombre_archivo.toLowerCase().endsWith('.pdf');
       const tagPdf = document.getElementById('aud-formato-tag');
       if (esPdf) tagPdf.classList.remove('oculto');
       else tagPdf.classList.add('oculto');
+
       if (archivos && archivos.length > 0) {
+        imgEl.style.display = 'none';
+        if (spinnerEl) spinnerEl.classList.remove('oculto');
+        if (errorBoxEl) errorBoxEl.classList.add('oculto');
+
+        imgEl.onload = function() {
+          if (spinnerEl) spinnerEl.classList.add('oculto');
+          if (errorBoxEl) errorBoxEl.classList.add('oculto');
+          imgEl.style.display = 'block';
+        };
+
+        imgEl.onerror = function() {
+          if (spinnerEl) spinnerEl.classList.add('oculto');
+          imgEl.style.display = 'none';
+          if (errorBoxEl) errorBoxEl.classList.remove('oculto');
+        };
+
         imgEl.src = `/api/imagen/${encodeURIComponent(archivos[0].nombre_archivo)}`;
       } else {
-        imgEl.src = '';
-        imgEl.alt = 'Sin imagen de certificado descargada aún (Haga clic en Procesar con IA)';
+        if (spinnerEl) spinnerEl.classList.add('oculto');
+        if (errorBoxEl) errorBoxEl.classList.add('oculto');
+        imgEl.style.display = 'none';
       }
       resetImagen();
 

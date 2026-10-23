@@ -132,26 +132,41 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                         if resp_proxy.status_code == 200 and len(resp_proxy.content) > 100:
                             raw_bytes = resp_proxy.content
                             
-                            # Si es un PDF, renderizar en memoria como JPEG
-                            if ext == ".pdf" or raw_bytes.startswith(b"%PDF"):
-                                import fitz
-                                doc = fitz.open(stream=raw_bytes, filetype="pdf")
-                                if len(doc) > 0:
-                                    pix = doc[0].get_pixmap(dpi=150)
-                                    data = pix.tobytes("jpeg")
-                                    mime = "image/jpeg"
-                                    doc.close()
+                            # Verificar si nos devolvió una página HTML de login en vez de un archivo binario
+                            if b"<!DOCTYPE html" in raw_bytes[:150] or b"<html" in raw_bytes[:150]:
+                                print(f"⚠️ Mi3F devolvió pantalla de login. Verifique la variable MI3F_PHPSESSID en Render.")
                             else:
-                                data = raw_bytes
-                                if ext == ".png": mime = "image/png"
-                                else: mime = "image/jpeg"
+                                # Si es un PDF, renderizar en memoria como JPEG
+                                if ext == ".pdf" or raw_bytes.startswith(b"%PDF"):
+                                    try:
+                                        import fitz
+                                        doc = fitz.open(stream=raw_bytes, filetype="pdf")
+                                        if len(doc) > 0:
+                                            pix = doc[0].get_pixmap(dpi=150)
+                                            data = pix.tobytes("jpeg")
+                                            mime = "image/jpeg"
+                                            doc.close()
+                                    except Exception as err_pdf:
+                                        print(f"Error procesando PDF desde Mi3F: {err_pdf}")
+                                else:
+                                    # Validar que sea una imagen válida con Pillow
+                                    try:
+                                        from PIL import Image
+                                        im_test = Image.open(io.BytesIO(raw_bytes))
+                                        im_test.verify()
+                                        data = raw_bytes
+                                        if ext == ".png": mime = "image/png"
+                                        else: mime = "image/jpeg"
+                                    except Exception as err_img:
+                                        print(f"Bytes no reconocidos como imagen: {err_img}")
 
-                            # Cachear en disco para que las siguientes vistas sean inmediatas
-                            try:
-                                with open(ruta_img, "wb") as f_cache:
-                                    f_cache.write(raw_bytes)
-                            except Exception:
-                                pass
+                                if data:
+                                    # Cachear en disco para que las siguientes vistas sean inmediatas
+                                    try:
+                                        with open(ruta_img, "wb") as f_cache:
+                                            f_cache.write(raw_bytes)
+                                    except Exception:
+                                        pass
                 except Exception as e_proxy:
                     print(f"Error obteniendo documento via proxy Mi3F: {e_proxy}")
 
