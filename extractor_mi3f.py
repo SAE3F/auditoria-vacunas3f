@@ -102,7 +102,9 @@ def obtener_sesion_requests() -> requests.Session:
     # 1. Prioridad: Variable de entorno en la nube (Render) o cookie configurada
     phpsessid = MI3F_PHPSESSID or os.environ.get("MI3F_PHPSESSID")
     if phpsessid:
-        session.cookies.set("PHPSESSID", phpsessid.strip(), domain="backend.mistramites.tresdefebrero.gob.ar")
+        phpsessid = phpsessid.strip()
+        session.headers["Cookie"] = f"PHPSESSID={phpsessid}"
+        session.cookies.set("PHPSESSID", phpsessid)
         return session
 
     # 2. Archivo de sesión local
@@ -111,8 +113,12 @@ def obtener_sesion_requests() -> requests.Session:
             with open(ARCHIVO_SESION, "r", encoding="utf-8") as f:
                 data = json.load(f)
             session.headers.update({"User-Agent": data.get("user_agent", "Mozilla/5.0")})
+            cookie_strs = []
             for cookie in data.get("cookies", []):
-                session.cookies.set(cookie["name"], cookie["value"], domain=cookie.get("domain", "backend.mistramites.tresdefebrero.gob.ar"))
+                session.cookies.set(cookie["name"], cookie["value"])
+                cookie_strs.append(f"{cookie['name']}={cookie['value']}")
+            if cookie_strs:
+                session.headers["Cookie"] = "; ".join(cookie_strs)
             return session
         except Exception:
             pass

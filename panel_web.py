@@ -3,6 +3,7 @@ Servidor Web Nativo y API REST para el Panel de Auditoría y Digitalización de 
 """
 import os
 import io
+import re
 import sys
 import json
 import sqlite3
@@ -11,6 +12,7 @@ from http import HTTPStatus
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from datetime import datetime
+from bs4 import BeautifulSoup
 
 # Asegurar codificación UTF-8 en consola de Windows
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -106,6 +108,10 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
             # 2. Si no está en disco local, obtener por proxy directo desde Mi3F usando metadatos en BD
             if data is None:
                 try:
+                    cod_doc = None
+                    sec = "243"
+                    cod_tra = None
+
                     with sqlite3.connect(DB_PATH) as conn:
                         conn.row_factory = sqlite3.Row
                         c = conn.cursor()
@@ -113,20 +119,20 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                                   (nombre_archivo, f"%{nombre_archivo}%"))
                         doc_info = c.fetchone()
 
-                        # Si no está en la tabla archivos_certificados, intentar buscar por código de trámite
-                        if not doc_info and "_" in nombre_archivo:
-                            cod_tramite = nombre_archivo.split("_")[0]
-                            ses = obtener_sesion_requests()
-                            descargar_certificado_tramite(ses, cod_tramite)
-                            c.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ? LIMIT 1", (cod_tramite,))
-                            doc_info = c.fetchone()
-
                     if doc_info:
                         cod_doc = doc_info["codigo_doc"]
                         sec = doc_info["seccion"] or "243"
                         cod_tra = doc_info["codigo_tramite"]
+                    elif "_" in nombre_archivo:
+                        # Extraer codigo_tramite y codigo_doc directamente del nombre (formato: {tramite}_{doc}_...)
+                        m_parts = re.match(r"^(\d+)_(\d+)", nombre_archivo)
+                        if m_parts:
+                            cod_tra = m_parts.group(1)
+                            cod_doc = m_parts.group(2)
+                            sec = "243"
+
+                    if cod_doc and cod_tra:
                         url_download = f"https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo={cod_doc}&seccion={sec}&tramiteproductora={cod_tra}"
-                        
                         ses = obtener_sesion_requests()
                         resp_proxy = ses.get(url_download, timeout=12, verify=False)
                         if resp_proxy.status_code == 200 and len(resp_proxy.content) > 100:
@@ -295,14 +301,50 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 cursor.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (codigo,))
                 archivos = [dict(r) for r in cursor.fetchall()]
 
-                # Si no tiene archivos registrados aún en BD, intentar sincronizar al vuelo desde Mi3F
+                # Si no tiene archivos registrados, consultar la bandeja de Mi3F al vuelo
                 if not archivos:
                     try:
                         ses = obtener_sesion_requests()
-                        descargados = descargar_certificado_tramite(ses, codigo)
-                        if descargados:
-                            cursor.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (codigo,))
-                            archivos = [dict(r) for r in cursor.fetchall()]
+                        url_exp = f"https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod={codigo}"
+                        resp_exp = ses.get(url_exp, timeout=5, verify=False)
+                        if resp_exp.status_code == 200 and "iniciar sesión" not in resp_exp.text.lower() and "sso.tresdefebrero" not in resp_exp.url:
+                            soup = BeautifulSoup(resp_exp.text, "html.parser")
+                            enlaces = soup.find_all("a", href=re.compile(r"tra_tramites_bandeja_am_documentos_download\.php"))
+                            docs_encontrados = []
+                            for a in enlaces:
+                                card = a.find_parent("div", class_=re.compile(r"card|col|row"))
+                                txt_card = card.get_text(" ", strip=True).lower() if card else a.get_text(strip=True).lower()
+                                if "vacun" in txt_card:
+                                    href = a.get("href", "")
+                                    m_doc = re.search(r"codigo=(\d+)", href)
+                                    m_sec = re.search(r"seccion=(\d+)", href)
+                                    c_doc = m_doc.group(1) if m_doc else "0"
+                                    c_sec = m_sec.group(1) if m_sec else "243"
+                                    nombre_gen = f"{codigo}_{c_doc}_vacunas.jpg"
+                                    
+                                    cursor.execute("""
+                                        INSERT OR IGNORE INTO archivos_certificados (
+                                            codigo_tramite, codigo_doc, seccion, nombre_archivo, ruta_local, tamano_bytes, content_type, fecha_descarga
+                                        ) VALUES (?, ?, ?, ?, ?, 0, 'image/jpeg', datetime('now'))
+                                    """, (codigo, c_doc, c_sec, nombre_gen, nombre_gen))
+                                    docs_encontrados.append({
+                                        "codigo_tramite": codigo,
+                                        "codigo_doc": c_doc,
+                                        "seccion": c_sec,
+                                        "nombre_archivo": nombre_gen,
+                                        "ruta_local": nombre_gen,
+                                        "tamano_bytes": 0,
+                                        "content_type": "image/jpeg"
+                                    })
+                            
+                            conn.commit()
+                            if docs_encontrados:
+                                archivos = docs_encontrados
+                                cursor.execute("UPDATE inscriptos SET cant_archivos_vacuna = ?, estado_descarga = 'DISPONIBLE' WHERE codigo_tramite = ?", (len(docs_encontrados), codigo))
+                                conn.commit()
+                            else:
+                                cursor.execute("UPDATE inscriptos SET cant_archivos_vacuna = 0, estado_descarga = 'SIN_CERTIFICADO' WHERE codigo_tramite = ?", (codigo,))
+                                conn.commit()
                     except Exception as err_sync:
                         print(f"Aviso sync al vuelo para tramite {codigo}: {err_sync}")
 

@@ -764,6 +764,12 @@
               <p style="font-size: 12px; color: #CBD5E1; margin-bottom: 12px;">Verifique que la sesión en Mi3F (MI3F_PHPSESSID) esté activa o acceda directamente al trámite:</p>
               <a id="btn-reintentar-mi3f" href="#" target="_blank" class="btn btn-sm btn-blanco">↗️ Ver en Mi3F</a>
             </div>
+            <div id="img-empty-box" class="oculto" style="color: #94A3B8; text-align: center; max-width: 340px; padding: 24px;">
+              <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
+              <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #F1F5F9;">Sin Certificado Adjunto</strong>
+              <p style="font-size: 13px; color: #94A3B8; margin-bottom: 16px; line-height: 1.5;">El solicitante no cargó archivo en la sección de vacunas del expediente en Mi3F.</p>
+              <a id="btn-empty-mi3f" href="#" target="_blank" class="btn btn-sm btn-outline">↗️ Ver expediente en Mi3F</a>
+            </div>
             <img id="img-carnet" src="" alt="Certificado de vacunación">
           </div>
         </div>
@@ -1108,11 +1114,13 @@
       const imgEl = document.getElementById('img-carnet');
       const spinnerEl = document.getElementById('img-loading-spinner');
       const errorBoxEl = document.getElementById('img-error-box');
+      const emptyBoxEl = document.getElementById('img-empty-box');
       const btnReintentarMi3F = document.getElementById('btn-reintentar-mi3f');
+      const btnEmptyMi3F = document.getElementById('btn-empty-mi3f');
 
-      if (btnReintentarMi3F) {
-        btnReintentarMi3F.href = `https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=${codigo}`;
-      }
+      const urlTramiteMi3F = `https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=${codigo}`;
+      if (btnReintentarMi3F) btnReintentarMi3F.href = urlTramiteMi3F;
+      if (btnEmptyMi3F) btnEmptyMi3F.href = urlTramiteMi3F;
 
       const esPdf = archivos && archivos.length > 0 && archivos[0].nombre_archivo.toLowerCase().endsWith('.pdf');
       const tagPdf = document.getElementById('aud-formato-tag');
@@ -1123,15 +1131,18 @@
         imgEl.style.display = 'none';
         if (spinnerEl) spinnerEl.classList.remove('oculto');
         if (errorBoxEl) errorBoxEl.classList.add('oculto');
+        if (emptyBoxEl) emptyBoxEl.classList.add('oculto');
 
         imgEl.onload = function() {
           if (spinnerEl) spinnerEl.classList.add('oculto');
           if (errorBoxEl) errorBoxEl.classList.add('oculto');
+          if (emptyBoxEl) emptyBoxEl.classList.add('oculto');
           imgEl.style.display = 'block';
         };
 
         imgEl.onerror = function() {
           if (spinnerEl) spinnerEl.classList.add('oculto');
+          if (emptyBoxEl) emptyBoxEl.classList.add('oculto');
           imgEl.style.display = 'none';
           if (errorBoxEl) errorBoxEl.classList.remove('oculto');
         };
@@ -1140,6 +1151,7 @@
       } else {
         if (spinnerEl) spinnerEl.classList.add('oculto');
         if (errorBoxEl) errorBoxEl.classList.add('oculto');
+        if (emptyBoxEl) emptyBoxEl.classList.remove('oculto');
         imgEl.style.display = 'none';
       }
       resetImagen();
