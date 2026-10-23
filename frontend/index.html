@@ -598,8 +598,12 @@
       <h1>Digitalización & Auditoría de Vacunación — Jardines 2026</h1>
     </div>
     <div class="header-actions">
+      <button id="btn-estado-sesion" class="btn btn-blanco" onclick="abrirModalSesion()" style="border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); color: #fff; display: inline-flex; align-items: center; gap: 8px;">
+        <span id="dot-sesion" style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+        <span id="txt-sesion">Sesión Mi3F</span>
+      </button>
       <button class="btn btn-blanco" onclick="abrirModalGuia()" style="border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); color: #fff;">
-        📖 Guía de Auditoría (Cómo Revisar)
+        📖 Guía de Auditoría
       </button>
       <button class="btn btn-naranja" onclick="exportarExcel()">
         📊 Exportar a Excel
@@ -994,6 +998,49 @@
       </div>
       <div style="padding: 14px 24px; border-top: 1px solid var(--borde); background: #F8FAFC; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end;">
         <button class="btn btn-azul" onclick="cerrarModalGuia()">Entendido, volver a auditar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuración de Sesión Mi3F -->
+  <div id="modal-sesion-mi3f" class="modal-guia-overlay oculto" onclick="cerrarModalSesionSiFondo(event)">
+    <div class="modal-guia-content" style="max-width: 550px;">
+      <div class="modal-guia-header">
+        <h2>🔑 Conexión con Mi3F (Visor de Certificados)</h2>
+        <button class="btn btn-sm btn-blanco" onclick="cerrarModalSesion()" style="padding: 4px 8px; font-size: 14px; font-weight: bold; line-height: 1;">✕</button>
+      </div>
+      <div class="modal-guia-body">
+        <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 16px;">
+          Para que el visor pueda traer en vivo los certificados adjuntos sin subir miles de imágenes a Render, se utiliza una cookie de sesión activa de Mi3F.
+        </p>
+
+        <div id="box-estado-sesion-modal" style="padding: 12px 16px; border-radius: 8px; background: #F1F5F9; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 13px;">
+            <strong>Estado actual:</strong> <span id="txt-estado-sesion-modal">Verificando...</span>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="verificarEstadoSesion(true)">🔄 Probar</button>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--texto-principal); margin-bottom: 6px;">
+            Cookie PHPSESSID:
+          </label>
+          <input type="text" id="input-phpsessid" placeholder="Ej: cie0n6hes0u26qaplruhhu349r" style="width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid var(--borde); border-radius: 6px; font-family: monospace;">
+        </div>
+
+        <div class="guia-card azul" style="margin-bottom: 0;">
+          <h3 style="font-size: 13px;">ℹ️ ¿Cómo renovarla si expira?</h3>
+          <ol style="margin-left: 18px; font-size: 12px; color: var(--texto-secundario); line-height: 1.6;">
+            <li>Entrá a <strong>backend.mistramites.tresdefebrero.gob.ar</strong> en tu navegador.</li>
+            <li>Presioná <strong>F12</strong> (o clic derecho > Inspeccionar).</li>
+            <li>Andá a la pestaña <strong>Application</strong> > <strong>Cookies</strong>.</li>
+            <li>Hacé doble clic en el valor de <strong>PHPSESSID</strong>, copialo y pegalo arriba.</li>
+          </ol>
+        </div>
+      </div>
+      <div style="padding: 14px 24px; border-top: 1px solid var(--borde); background: #F8FAFC; border-radius: 0 0 12px 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span id="msg-guardar-sesion" style="font-size: 12px; font-weight: 600;"></span>
+        <button id="btn-guardar-sesion" class="btn btn-azul" onclick="guardarSesionMi3F()">Guardar y Conectar</button>
       </div>
     </div>
   </div>
@@ -1568,9 +1615,95 @@
       img.style.filter = colorInvertido ? 'invert(1) contrast(1.5)' : 'none';
     }
 
+    /* Funciones de Gestión de Sesión Mi3F */
+    async function verificarEstadoSesion(alerta = false) {
+      const dot = document.getElementById('dot-sesion');
+      const txt = document.getElementById('txt-sesion');
+      const txtModal = document.getElementById('txt-estado-sesion-modal');
+      try {
+        const res = await fetch('/api/estado_sesion');
+        const data = await res.json();
+        if (data.activa) {
+          if (dot) dot.style.background = '#10B981';
+          if (txt) txt.innerText = 'Mi3F Conectado';
+          if (txtModal) txtModal.innerHTML = '<span style="color:#059669; font-weight:bold;">🟢 Activa y conectada</span>';
+          if (alerta) alert('¡Conexión exitosa con Mi3F!');
+        } else {
+          if (dot) dot.style.background = '#EF4444';
+          if (txt) txt.innerText = 'Mi3F Desconectado';
+          if (txtModal) txtModal.innerHTML = '<span style="color:#DC2626; font-weight:bold;">🔴 Desconectada o expirada</span>';
+          if (alerta) alert('La sesión actual en Mi3F no es válida o redirigió al login.');
+        }
+      } catch (e) {
+        if (dot) dot.style.background = '#F59E0B';
+        if (txt) txt.innerText = 'Error Conexión';
+        if (txtModal) txtModal.innerText = 'Error verificando';
+      }
+    }
+
+    function abrirModalSesion() {
+      const modal = document.getElementById('modal-sesion-mi3f');
+      if (modal) {
+        modal.classList.remove('oculto');
+        verificarEstadoSesion();
+      }
+    }
+
+    function cerrarModalSesion() {
+      const modal = document.getElementById('modal-sesion-mi3f');
+      if (modal) modal.classList.add('oculto');
+    }
+
+    function cerrarModalSesionSiFondo(event) {
+      if (event.target && event.target.id === 'modal-sesion-mi3f') {
+        cerrarModalSesion();
+      }
+    }
+
+    async function guardarSesionMi3F() {
+      const input = document.getElementById('input-phpsessid');
+      const val = input ? input.value.trim() : '';
+      const msg = document.getElementById('msg-guardar-sesion');
+      const btn = document.getElementById('btn-guardar-sesion');
+      if (!val) {
+        alert('Por favor ingrese el valor de la cookie PHPSESSID');
+        return;
+      }
+      btn.disabled = true;
+      btn.innerText = 'Verificando con Mi3F...';
+      msg.innerText = '';
+      try {
+        const res = await fetch('/api/configurar_sesion', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ phpsessid: val })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          msg.style.color = '#059669';
+          msg.innerText = '✅ ¡Conectado con éxito!';
+          verificarEstadoSesion();
+          setTimeout(() => {
+            cerrarModalSesion();
+            if (codigoActual) cargarDetalleInscripto(codigoActual);
+          }, 1200);
+        } else {
+          msg.style.color = '#DC2626';
+          msg.innerText = `❌ ${data.mensaje || 'Error al conectar'}`;
+        }
+      } catch (e) {
+        msg.style.color = '#DC2626';
+        msg.innerText = `❌ ${e.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Guardar y Conectar';
+      }
+    }
+
     // Inicialización
     cargarMetricas();
     cargarInscriptos();
+    verificarEstadoSesion();
   </script>
 </body>
 </html>

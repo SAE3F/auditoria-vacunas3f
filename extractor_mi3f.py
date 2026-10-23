@@ -99,7 +99,24 @@ def obtener_sesion_requests() -> requests.Session:
         "Connection": "keep-alive"
     })
     
-    # 1. Prioridad: Variable de entorno en la nube (Render) o cookie configurada
+    # 0. Prioridad máxima: Configuración guardada en BD
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            c = conn.cursor()
+            c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
+            c.execute("SELECT valor FROM config_app WHERE clave = 'MI3F_PHPSESSID'")
+            row = c.fetchone()
+            if row and row[0]:
+                phpsessid = row[0].strip()
+                if phpsessid.startswith("PHPSESSID="):
+                    phpsessid = phpsessid.replace("PHPSESSID=", "").strip()
+                session.headers["Cookie"] = f"PHPSESSID={phpsessid}"
+                session.cookies.set("PHPSESSID", phpsessid)
+                return session
+    except Exception:
+        pass
+
+    # 1. Variable de entorno en la nube (Render) o cookie configurada
     phpsessid = MI3F_PHPSESSID or os.environ.get("MI3F_PHPSESSID") or os.environ.get("PHPSESSID") or os.environ.get("MI3F_COOKIE")
     if phpsessid:
         phpsessid = phpsessid.strip()

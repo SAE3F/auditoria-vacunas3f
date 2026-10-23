@@ -187,6 +187,25 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 self.send_error(HTTPStatus.NOT_FOUND, "Imagen no encontrada ni disponible en Mi3F")
                 return
 
+        # API: Estado de la sesión Mi3F
+        if path == "/api/estado_sesion":
+            ses = obtener_sesion_requests()
+            cookie_activa = ses.headers.get("Cookie", "")
+            valida = False
+            if "PHPSESSID=" in cookie_activa:
+                try:
+                    url_test = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=340844"
+                    r = ses.get(url_test, timeout=6, verify=False)
+                    if r.status_code == 200 and "ingreso" not in r.url and "iniciar sesión" not in r.text.lower():
+                        valida = True
+                except Exception:
+                    pass
+            self._responder_json({
+                "activa": valida,
+                "cookie_configurada": bool("PHPSESSID=" in cookie_activa)
+            })
+            return
+
         # API: Diagnóstico de conexión Mi3F
         if path == "/api/diagnostico_mi3f":
             # Detectar si el usuario le puso otro nombre a la variable en Render
@@ -418,6 +437,45 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
             datos = json.loads(body)
         except Exception:
             datos = {}
+
+        # API: Configurar y persistir PHPSESSID en base de datos
+        if path == "/api/configurar_sesion":
+            nueva_cookie = str(datos.get("phpsessid", "")).strip()
+            if nueva_cookie.startswith("PHPSESSID="):
+                nueva_cookie = nueva_cookie.replace("PHPSESSID=", "").strip()
+            
+            if not nueva_cookie:
+                self._responder_json({"status": "error", "mensaje": "Cookie PHPSESSID vacía."}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            # Probar si funciona contra Mi3F
+            try:
+                import requests
+                s_test = requests.Session()
+                s_test.trust_env = False
+                s_test.headers["Cookie"] = f"PHPSESSID={nueva_cookie}"
+                url_test = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=340844"
+                r = s_test.get(url_test, timeout=8, verify=False)
+                if "sso.tresdefebrero" in r.url or "iniciar sesión" in r.text.lower() or "ingreso" in r.url:
+                    self._responder_json({
+                        "status": "error",
+                        "mensaje": "La cookie ingresada no es válida o ya expiró en Mi3F (redirigió al login)."
+                    }, status=HTTPStatus.UNAUTHORIZED)
+                    return
+            except Exception as e_test:
+                print(f"Aviso prueba sesion: {e_test}")
+
+            # Persistir en SQLite
+            try:
+                with sqlite3.connect(DB_PATH) as conn:
+                    c = conn.cursor()
+                    c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
+                    c.execute("INSERT OR REPLACE INTO config_app (clave, valor) VALUES (?, ?)", ('MI3F_PHPSESSID', nueva_cookie))
+                    conn.commit()
+                self._responder_json({"status": "ok", "mensaje": "¡Sesión configurada y validada exitosamente!"})
+            except Exception as e_db:
+                self._responder_json({"status": "error", "mensaje": str(e_db)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
 
         # API: Cargar Padrón Base desde Excel
         if path == "/api/accion/cargar_padron":
