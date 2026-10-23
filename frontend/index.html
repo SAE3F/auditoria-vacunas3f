@@ -464,6 +464,128 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+    .modal-guia-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      padding: 20px;
+      backdrop-filter: blur(3px);
+    }
+    .modal-guia-content {
+      background: #FFFFFF;
+      border-radius: 12px;
+      max-width: 860px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--borde);
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-guia-header {
+      background: var(--azul-3f);
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-guia-header h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-guia-body {
+      padding: 24px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--gris-texto);
+    }
+    .guia-card {
+      background: #F8FAFC;
+      border-radius: 8px;
+      border: 1px solid var(--borde);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .guia-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .guia-card.verde { border-left: 4px solid var(--verde-exito); }
+    .guia-card.amarillo { border-left: 4px solid #D97706; }
+    .guia-card.rojo { border-left: 4px solid #DC2626; }
+    .guia-card.azul { border-left: 4px solid var(--azul-3f); }
+    .tabla-equivalencias {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .tabla-equivalencias th, .tabla-equivalencias td {
+      border: 1px solid var(--borde);
+      padding: 6px 10px;
+      text-align: left;
+    }
+    .tabla-equivalencias th {
+      background: #E2E8F0;
+      font-weight: 700;
+      color: var(--gris-texto);
+    }
+    .badge-marca {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 600;
+      margin: 1px;
+    }
+
+    .banner-guia-rapida {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .banner-guia-rapida strong {
+      color: #1E40AF;
+      font-size: 13px;
+    }
+    .banner-guia-rapida p {
+      color: #1E3A8A;
+      font-size: 12px;
+      margin: 2px 0 0 0;
+    }
+
     .oculto { display: none !important; }
   </style>
 </head>
@@ -476,6 +598,9 @@
       <h1>Digitalización & Auditoría de Vacunación — Jardines 2026</h1>
     </div>
     <div class="header-actions">
+      <button class="btn btn-blanco" onclick="abrirModalGuia()" style="border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); color: #fff;">
+        📖 Guía de Auditoría (Cómo Revisar)
+      </button>
       <button class="btn btn-naranja" onclick="exportarExcel()">
         📊 Exportar a Excel
       </button>
@@ -664,6 +789,15 @@
             </div>
           </div>
 
+          <!-- Banner Informativo para el Auditor Asistente -->
+          <div class="banner-guia-rapida">
+            <div>
+              <strong>💡 ¿Cómo resolver este caso?</strong>
+              <p>Revisá la foto a la izquierda. Si ves las dosis marcadas abajo con stickers o firmas, tocalas como aplicadas. Luego elegí uno de los 3 botones al pie.</p>
+            </div>
+            <button class="btn btn-sm btn-blanco" onclick="abrirModalGuia()">📖 Ver Guía Completa</button>
+          </div>
+
           <div style="display:flex; gap:16px; margin-bottom: 12px;">
             <div><strong>Calidad Imagen:</strong> <span id="aud-calidad" class="badge">--</span></div>
             <div><strong>Estado Detectado:</strong> <span id="aud-estado" class="badge">--</span></div>
@@ -736,6 +870,117 @@
       </div>
     </div>
   </main>
+
+  <!-- Modal Interactivo: Guía Práctica de Auditoría para Asistentes -->
+  <div id="modal-guia-auditoria" class="modal-guia-overlay oculto" onclick="cerrarModalGuiaSiFondo(event)">
+    <div class="modal-guia-content">
+      <div class="modal-guia-header">
+        <h2>📖 Manual Práctico de Auditoría de Vacunas — Jardines 3F</h2>
+        <button class="btn btn-sm btn-blanco" onclick="cerrarModalGuia()" style="padding: 4px 8px; font-size: 14px; font-weight: bold; line-height: 1;">✕</button>
+      </div>
+      <div class="modal-guia-body">
+        
+        <div class="guia-card azul">
+          <h3>🎯 ¿Cuál es tu objetivo como auditor?</h3>
+          <p>
+            Revisar la foto o PDF del carnet de vacunación subido por la familia y determinar si el menor cumple con el calendario oficial argentino para su edad, si adeuda dosis, o si el documento que subieron no permite auditar.
+          </p>
+        </div>
+
+        <div class="guia-card">
+          <h3>🪜 El paso a paso en cada expediente:</h3>
+          <ol style="margin-left: 20px; line-height: 1.8;">
+            <li><strong>Mirá la imagen del carnet a la izquierda:</strong> Usá las herramientas de rotación (↺ ↻) si está torcida o dada vuelta, y el botón 🔍 para ampliar firmas o fechas.</li>
+            <li><strong>Revisá la tabla "⚠️ Vacunas Faltantes":</strong> Estas son las dosis que corresponden a la edad del menor pero que el sistema automático no pudo confirmar.</li>
+            <li><strong>Buscá stickers o sellos en el carnet:</strong> Si ves que la vacuna sí está aplicada (muchas veces tapada por un sticker o escrita a mano), hacé clic en el botón verde <strong>✅ Marcar como Aplicada</strong> en esa fila.</li>
+            <li><strong>Elegí uno de los 3 caminos al pie:</strong></li>
+          </ol>
+        </div>
+
+        <div class="guia-card verde">
+          <h3>✅ Camino 1: Aprobar Esquema Al Día (Botón Verde)</h3>
+          <p><strong>¿Cuándo usarlo?</strong></p>
+          <ul>
+            <li>Cuando verificaste visualmente que el chico tiene <strong>todas las vacunas obligatorias para su edad</strong> aplicadas y selladas.</li>
+            <li>Si la IA no leyó alguna fecha por estar tapada por un sticker de vial, pero vos la estás viendo claramente en el carnet.</li>
+          </ul>
+        </div>
+
+        <div class="guia-card amarillo">
+          <h3>⚠️ Camino 2: Confirmar Esquema Incompleto (Botón Amarillo)</h3>
+          <p><strong>¿Cuándo usarlo?</strong></p>
+          <ul>
+            <li>Cuando la foto se ve <strong>perfecta y completa</strong>, pero los casilleros de las vacunas exigidas para su edad están <strong>en blanco o vacíos</strong>.</li>
+            <li>Significa: <em>"El carnet está bien presentado, pero a la familia le falta vacunar al nene"</em>.</li>
+          </ul>
+        </div>
+
+        <div class="guia-card rojo">
+          <h3>📤 Camino 3: Solicitar Reenvío (Botón Rojo)</h3>
+          <p><strong>¿Cuándo usarlo?</strong></p>
+          <ul>
+            <li><strong>Falta una hoja:</strong> Por ejemplo, subieron solo la portada o la página de recién nacido, pero no la página de 1 a 2 años donde van los refuerzos.</li>
+            <li><strong>Foto ilegible o cortada:</strong> La imagen está borrosa, fuera de foco, muy oscura o cortada por la mitad.</li>
+            <li><strong>Documento incorrecto:</strong> Subieron un DNI, partida de nacimiento, apto físico o certificado escolar en lugar de la libreta de vacunas.</li>
+            <li><em>Al tocar este botón, te va a pedir que escribas en una oración qué falta (ej: "Subir foto de la página de 15 meses") para poder avisarle a la familia.</em></li>
+          </ul>
+        </div>
+
+        <div class="guia-card">
+          <h3>💉 Nombres comerciales comunes en los stickers (Equivalencias):</h3>
+          <p style="font-size: 12px; color: var(--gris-suave); margin-bottom: 8px;">
+            A veces en el carnet no escriben el nombre de la vacuna sino que pegan el sticker comercial del laboratorio. Esta tabla te ayuda a reconocer qué es cada una:
+          </p>
+          <table class="tabla-equivalencias">
+            <thead>
+              <tr>
+                <th>Vacuna Oficial en el Sistema</th>
+                <th>Nombre en Sticker / Laboratorio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Meningococo</strong></td>
+                <td><span class="badge-marca">Menveo</span> <span class="badge-marca">Menactra</span> <span class="badge-marca">Nimenrix</span> <span class="badge-marca">Bexsero</span></td>
+              </tr>
+              <tr>
+                <td><strong>Neumococo Conjugada</strong></td>
+                <td><span class="badge-marca">Prevenar 13</span> <span class="badge-marca">Synflorix</span> <span class="badge-marca">Prevenar</span></td>
+              </tr>
+              <tr>
+                <td><strong>Rotavirus</strong></td>
+                <td><span class="badge-marca">Rotarix</span> <span class="badge-marca">Rotateq</span></td>
+              </tr>
+              <tr>
+                <td><strong>Quíntuple / Pentavalente</strong></td>
+                <td><span class="badge-marca">Pentaxim</span> <span class="badge-marca">Infanrix Hexa</span> <span class="badge-marca">Quintuple</span></td>
+              </tr>
+              <tr>
+                <td><strong>Polio (IPV / Salk)</strong></td>
+                <td><span class="badge-marca">Salk</span> <span class="badge-marca">IPV</span> <span class="badge-marca">Imovax Polio</span></td>
+              </tr>
+              <tr>
+                <td><strong>Triple Viral (SRP)</strong></td>
+                <td><span class="badge-marca">Priorix</span> <span class="badge-marca">MMR</span> <span class="badge-marca">Doble Viral Campaña</span></td>
+              </tr>
+              <tr>
+                <td><strong>Varicela</strong></td>
+                <td><span class="badge-marca">Varivax</span> <span class="badge-marca">Varilrix</span></td>
+              </tr>
+              <tr>
+                <td><strong>Hepatitis A</strong></td>
+                <td><span class="badge-marca">Havrix</span> <span class="badge-marca">Avaxim</span> <span class="badge-marca">Hep A</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div style="padding: 14px 24px; border-top: 1px solid var(--borde); background: #F8FAFC; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end;">
+        <button class="btn btn-azul" onclick="cerrarModalGuia()">Entendido, volver a auditar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let rotacionActual = 0;
@@ -1208,6 +1453,23 @@
         await abrirAuditoria(codigoActual);
       } catch (e) {
         mostrarToast('Error guardando en el servidor', 'error');
+      }
+    }
+
+    /* Funciones del Modal Guía */
+    function abrirModalGuia() {
+      const modal = document.getElementById('modal-guia-auditoria');
+      if (modal) modal.classList.remove('oculto');
+    }
+
+    function cerrarModalGuia() {
+      const modal = document.getElementById('modal-guia-auditoria');
+      if (modal) modal.classList.add('oculto');
+    }
+
+    function cerrarModalGuiaSiFondo(event) {
+      if (event.target && event.target.id === 'modal-guia-auditoria') {
+        cerrarModalGuia();
       }
     }
 
