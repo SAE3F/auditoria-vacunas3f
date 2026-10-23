@@ -187,6 +187,37 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 self.send_error(HTTPStatus.NOT_FOUND, "Imagen no encontrada ni disponible en Mi3F")
                 return
 
+        # API: Diagnóstico de conexión Mi3F
+        if path == "/api/diagnostico_mi3f":
+            diag = {
+                "env_mi3f_set": bool(os.environ.get("MI3F_PHPSESSID")),
+                "env_mi3f_len": len(os.environ.get("MI3F_PHPSESSID", "").strip()),
+                "env_mi3f_prefix": (os.environ.get("MI3F_PHPSESSID", "").strip()[:4] + "...") if os.environ.get("MI3F_PHPSESSID") else "NO_SET"
+            }
+            try:
+                import socket
+                diag["dns_ip"] = socket.gethostbyname("backend.mistramites.tresdefebrero.gob.ar")
+            except Exception as e_dns:
+                diag["dns_error"] = str(e_dns)
+
+            try:
+                ses = obtener_sesion_requests()
+                diag["cookie_header_sent"] = ses.headers.get("Cookie", "NINGUNA")
+                test_url = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo=584972&seccion=243&tramiteproductora=340844"
+                resp = ses.get(test_url, timeout=10, verify=False)
+                diag["test_doc_status"] = resp.status_code
+                diag["test_doc_url"] = resp.url
+                diag["test_doc_content_type"] = resp.headers.get("Content-Type")
+                diag["test_doc_len"] = len(resp.content)
+                diag["test_doc_is_html"] = b"<!DOCTYPE html" in resp.content[:150] or b"<html" in resp.content[:150]
+                if diag["test_doc_is_html"]:
+                    diag["test_doc_preview"] = resp.text[:300]
+            except Exception as e_req:
+                diag["test_req_error"] = str(e_req)
+
+            self._responder_json(diag)
+            return
+
         # API: Métricas generales
         if path == "/api/stats":
             with sqlite3.connect(DB_PATH) as conn:
