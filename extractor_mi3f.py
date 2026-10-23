@@ -90,6 +90,8 @@ def inicializar_bd():
 def obtener_sesion_requests() -> requests.Session:
     """Crea una sesión de Requests reutilizando las cookies activas de Mi3F."""
     session = requests.Session()
+    # Deshabilitar herencia de proxies locales en la sesión para evitar bloqueos
+    session.trust_env = False
     session.headers.update({
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
