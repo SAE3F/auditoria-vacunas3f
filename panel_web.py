@@ -189,10 +189,17 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
 
         # API: Diagnóstico de conexión Mi3F
         if path == "/api/diagnostico_mi3f":
+            # Detectar si el usuario le puso otro nombre a la variable en Render
+            posibles_keys = [k for k in os.environ.keys() if any(x in k.upper() for x in ["MI3F", "PHP", "COOKIE", "SESSI", "PASS", "CUIL"])]
+            
+            # Buscar el valor de sesión bajo cualquier clave coincidente
+            phpsessid_val = os.environ.get("MI3F_PHPSESSID") or os.environ.get("PHPSESSID") or os.environ.get("MI3F_COOKIE") or ""
+            
             diag = {
-                "env_mi3f_set": bool(os.environ.get("MI3F_PHPSESSID")),
-                "env_mi3f_len": len(os.environ.get("MI3F_PHPSESSID", "").strip()),
-                "env_mi3f_prefix": (os.environ.get("MI3F_PHPSESSID", "").strip()[:4] + "...") if os.environ.get("MI3F_PHPSESSID") else "NO_SET"
+                "env_mi3f_set": bool(phpsessid_val),
+                "env_mi3f_len": len(phpsessid_val.strip()),
+                "env_mi3f_prefix": (phpsessid_val.strip()[:4] + "...") if phpsessid_val else "NO_SET",
+                "matching_env_keys_found": posibles_keys
             }
             try:
                 import socket

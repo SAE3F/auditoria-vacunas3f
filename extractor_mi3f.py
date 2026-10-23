@@ -100,9 +100,12 @@ def obtener_sesion_requests() -> requests.Session:
     })
     
     # 1. Prioridad: Variable de entorno en la nube (Render) o cookie configurada
-    phpsessid = MI3F_PHPSESSID or os.environ.get("MI3F_PHPSESSID")
+    phpsessid = MI3F_PHPSESSID or os.environ.get("MI3F_PHPSESSID") or os.environ.get("PHPSESSID") or os.environ.get("MI3F_COOKIE")
     if phpsessid:
         phpsessid = phpsessid.strip()
+        # Si el usuario copio 'PHPSESSID=...' entero, limpiarlo
+        if phpsessid.startswith("PHPSESSID="):
+            phpsessid = phpsessid.replace("PHPSESSID=", "").strip()
         session.headers["Cookie"] = f"PHPSESSID={phpsessid}"
         session.cookies.set("PHPSESSID", phpsessid)
         return session
