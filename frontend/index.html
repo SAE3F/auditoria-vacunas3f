@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría de Vacunación Infantil — Municipalidad de Tres de Febrero</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --azul-3f: #163C68;
+      --azul-hover: #1f4f85;
+      --naranja-3f: #F69321;
+      --naranja-hover: #e08215;
+      --fondo: #F4F7FB;
+      --blanco: #FFFFFF;
+      --gris-texto: #334155;
+      --gris-suave: #64748B;
+      --borde: #E2E8F0;
+      --verde-exito: #10B981;
+      --verde-bg: #ECFDF5;
+      --amarillo-alerta: #F59E0B;
+      --amarillo-bg: #FFFBEB;
+      --rojo-peligro: #EF4444;
+      --rojo-bg: #FEF2F2;
+      --radio: 10px;
+      --sombra: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--fondo);
+      color: var(--gris-texto);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Institucional */
+    header {
+      background: var(--azul-3f);
+      color: var(--blanco);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .header-logo-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .badge-muni {
+      background: var(--naranja-3f);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* Botones */
+    .btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-naranja { background: var(--naranja-3f); color: #fff; }
+    .btn-naranja:hover { background: var(--naranja-hover); }
+    .btn-azul { background: var(--azul-3f); color: #fff; }
+    .btn-azul:hover { background: var(--azul-hover); }
+    .btn-verde { background: var(--verde-exito); color: #fff; }
+    .btn-verde:hover { background: #059669; }
+    .btn-amarillo { background: #D97706; color: #fff; }
+    .btn-amarillo:hover { background: #B45309; }
+    .btn-rojo { background: #DC2626; color: #fff; }
+    .btn-rojo:hover { background: #B91C1C; }
+    .btn-blanco { background: var(--blanco); color: var(--azul-3f); border: 1px solid var(--borde); }
+    .btn-blanco:hover { background: #F1F5F9; }
+    .btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.4); }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); }
+    .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 4px; }
+
+    /* Barra Superior de Procesamiento IA */
+    .barra-procesamiento-ia {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--borde);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ia-desc {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ia-desc-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #EFF6FF;
+      color: #2563EB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .ia-desc-text strong {
+      font-size: 14px;
+      color: var(--azul-3f);
+      display: block;
+    }
+    .ia-desc-text span {
+      font-size: 12px;
+      color: var(--gris-suave);
+    }
+    .ia-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Banner de Progreso Activo */
+    .banner-progreso {
+      background: #EFF6FF;
+      border-bottom: 2px solid #3B82F6;
+      padding: 12px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .banner-progreso-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #1E40AF;
+    }
+    .barra-progreso-bg {
+      background: #DBEAFE;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      width: 100%;
+    }
+    .barra-progreso-fill {
+      background: #2563EB;
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    /* Barra de Métricas */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      padding: 20px 32px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .metric-card {
+      background: var(--blanco);
+      border-radius: var(--radio);
+      padding: 16px;
+      box-shadow: var(--sombra);
+      border: 1px solid var(--borde);
+      border-left: 4px solid var(--azul-3f);
+    }
+    .metric-card.al-dia { border-left-color: var(--verde-exito); }
+    .metric-card.incompleto { border-left-color: var(--amarillo-alerta); }
+    .metric-card.revision { border-left-color: var(--rojo-peligro); }
+    .metric-label { font-size: 12px; font-weight: 600; color: var(--gris-suave); text-transform: uppercase; margin-bottom: 4px; }
+    .metric-value { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 700; color: var(--gris-texto); }
+
+    /* Contenedor Principal */
+    main {
+      flex: 1;
+      padding: 0 32px 32px 32px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Pestañas */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid var(--borde);
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gris-suave);
+      cursor: pointer;
+      position: relative;
+    }
+    .tab-btn.active {
+      color: var(--azul-3f);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--azul-3f);
+      border-radius: 3px 3px 0 0;
+    }
+
+    /* Vista 1: Padrón y Filtros */
+    .filtro-box {
+      background: var(--blanco);
+      padding: 16px;
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+      border: 1px solid var(--borde);
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .input-group label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--gris-suave);
+    }
+    input[type="text"], select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--borde);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--azul-3f);
+    }
+
+    /* Tabla */
+    .table-container {
+      background: var(--blanco);
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+      border: 1px solid var(--borde);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    th {
+      background: #F8FAFC;
+      padding: 12px 16px;
+      font-weight: 600;
+      color: var(--gris-suave);
+      border-bottom: 1px solid var(--borde);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--borde);
+    }
+    tr:hover { background: #F8FAFC; }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .badge-al-dia { background: var(--verde-bg); color: var(--verde-exito); }
+    .badge-incompleto { background: var(--amarillo-bg); color: #B45309; }
+    .badge-revision { background: var(--rojo-bg); color: var(--rojo-peligro); }
+    .badge-falta-info { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+    .badge-solicitar { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+    .badge-calidad-alta { background: #EFF6FF; color: #1D4ED8; }
+    .badge-calidad-media { background: #FEF3C7; color: #D97706; }
+    .badge-calidad-baja { background: #FEE2E2; color: #DC2626; }
+    .badge-humano { background: #F3E8FF; color: #7E22CE; border: 1px solid #E9D5FF; }
+
+    /* Vista 2: Split Screen de Auditoría */
+    .split-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      height: calc(100vh - 250px);
+    }
+    .panel-imagen {
+      background: #1E293B;
+      border-radius: var(--radio);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--sombra);
+    }
+    .toolbar-imagen {
+      background: #0F172A;
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .image-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 20px;
+    }
+    .image-viewport img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border-radius: 4px;
+    }
+
+    .panel-auditoria {
+      background: var(--blanco);
+      border-radius: var(--radio);
+      border: 1px solid var(--borde);
+      box-shadow: var(--sombra);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 24px;
+    }
+    .nino-header {
+      border-bottom: 2px solid var(--borde);
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .nino-header h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 20px;
+      color: var(--azul-3f);
+      margin-bottom: 6px;
+    }
+    .nino-tags {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--gris-suave);
+    }
+
+    .alerta-revision-box {
+      background: var(--rojo-bg);
+      border-left: 4px solid var(--rojo-peligro);
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+    .alerta-revision-title {
+      font-weight: 700;
+      color: var(--rojo-peligro);
+      font-size: 13px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .alerta-revision-desc {
+      font-size: 12px;
+      color: #7F1D1D;
+    }
+
+    .seccion-titulo {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--azul-3f);
+      margin: 16px 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .vacunas-tabla {
+      width: 100%;
+      margin-bottom: 16px;
+      border: 1px solid var(--borde);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .vacunas-tabla th { background: #F1F5F9; font-size: 11px; }
+    .vacunas-tabla td { font-size: 12px; padding: 8px 12px; vertical-align: middle; }
+
+    .acciones-humano {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 2px solid var(--borde);
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    /* Modal / Spinners */
+    .spinner {
+      border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top: 2px solid currentColor;
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .oculto { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado -->
+  <header>
+    <div class="header-logo-title">
+      <span class="badge-muni">Muni 3F</span>
+      <h1>Digitalización & Auditoría de Vacunación — Jardines 2026</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-naranja" onclick="exportarExcel()">
+        📊 Exportar a Excel
+      </button>
+    </div>
+  </header>
+
+  <!-- Barra de Procesamiento Masivo con IA -->
+  <section class="barra-procesamiento-ia">
+    <div class="ia-desc">
+      <div class="ia-desc-icon">🤖</div>
+      <div class="ia-desc-text">
+        <strong>Procesamiento Inteligente con Gemini Vision (IA)</strong>
+        <span>Descarga y audita automáticamente certificados de vacunación en segundo plano</span>
+      </div>
+    </div>
+    <div class="ia-controls">
+      <label style="font-size: 12px; font-weight: 600; color: var(--gris-suave);">Procesar:</label>
+      <select id="select-lote-cant">
+        <option value="10">10 certificados</option>
+        <option value="25" selected>25 certificados</option>
+        <option value="50">50 certificados</option>
+        <option value="100">100 certificados</option>
+      </select>
+      <button id="btn-iniciar-ia" class="btn btn-naranja" onclick="iniciarProcesamientoLote()">
+        🚀 Iniciar Procesamiento con IA
+      </button>
+    </div>
+  </section>
+
+  <!-- Banner de Progreso de Lote en Vivo -->
+  <div id="banner-progreso-lote" class="banner-progreso oculto">
+    <div class="banner-progreso-top">
+      <div>
+        <span class="spinner" style="border-top-color: #2563EB; margin-right: 8px;"></span>
+        <strong id="progreso-lote-txt">Procesando certificados con IA en segundo plano...</strong>
+      </div>
+      <div id="progreso-lote-count" style="font-weight: 700;">0 / 0</div>
+    </div>
+    <div class="barra-progreso-bg">
+      <div id="barra-progreso-fill" class="barra-progreso-fill" style="width: 0%;"></div>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas -->
+  <section class="metrics-bar">
+    <div class="metric-card">
+      <div class="metric-label">Inscriptos Totales</div>
+      <div class="metric-value" id="stat-total">--</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Certificados Descargados</div>
+      <div class="metric-value" id="stat-descargados">--</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Analizados con IA</div>
+      <div class="metric-value" id="stat-procesados">--</div>
+    </div>
+    <div class="metric-card al-dia">
+      <div class="metric-label">Esquema Completo / Al Día</div>
+      <div class="metric-value" id="stat-aldia">--</div>
+    </div>
+    <div class="metric-card incompleto">
+      <div class="metric-label">Esquema Incompleto</div>
+      <div class="metric-value" id="stat-incompleto">--</div>
+    </div>
+    <div class="metric-card revision">
+      <div class="metric-label">🚨 Revisión Requerida (Pendiente)</div>
+      <div class="metric-value" id="stat-revision">--</div>
+    </div>
+    <div class="metric-card" style="border-left-color: #B91C1C;">
+      <div class="metric-label">📤 Solicitar Reenvío</div>
+      <div class="metric-value" id="stat-solicitar">--</div>
+    </div>
+  </section>
+
+  <!-- Contenedor Principal con Tabs -->
+  <main>
+    <div class="tabs-nav">
+      <button class="tab-btn active" id="btn-tab-padron" onclick="cambiarTab('padron')">📋 Padrón General</button>
+      <button class="tab-btn" id="btn-tab-auditoria" onclick="cambiarTab('auditoria')">👁️ Visor de Auditoría Asistida</button>
+    </div>
+
+    <!-- Pestaña 1: Padrón -->
+    <div id="vista-padron">
+      <div class="filtro-box">
+        <div class="input-group" style="flex: 2;">
+          <label>Buscar</label>
+          <input type="text" id="filtro-q" placeholder="DNI, Nombre, Apellido o Código de Trámite..." oninput="cargarInscriptos()">
+        </div>
+        <div class="input-group" style="flex: 1;">
+          <label>Jardín</label>
+          <select id="filtro-jardin" onchange="cargarInscriptos()">
+            <option value="">Todos los Jardines</option>
+          </select>
+        </div>
+        <div class="input-group" style="flex: 1;">
+          <label>Estado Vacunal</label>
+          <select id="filtro-estado" onchange="cargarInscriptos()">
+            <option value="">Todos los Estados</option>
+            <option value="AL_DIA">Al Día</option>
+            <option value="INCOMPLETO">Incompleto</option>
+            <option value="REVISION_REQUERIDA">Revisión Requerida (Pendiente de Auditoría)</option>
+            <option value="SOLICITAR_REENVIO">Solicitar Reenvío (Falta Información / Hoja)</option>
+          </select>
+        </div>
+        <div class="input-group" style="align-self: flex-end;">
+          <label><input type="checkbox" id="filtro-solo-revision" onchange="cargarInscriptos()"> Solo Casos Críticos (IA con Duda)</label>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>DNI Menor</th>
+              <th>Alumno</th>
+              <th>Jardín / Sala</th>
+              <th>Edad</th>
+              <th>Estado Vacunación</th>
+              <th>Calidad Foto</th>
+              <th>Motivo de Revisión / Diagnóstico</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-inscriptos-body">
+            <tr><td colspan="9" style="text-align: center; padding: 20px;">Cargando padrón...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pestaña 2: Visor de Auditoría Split Screen -->
+    <div id="vista-auditoria" class="oculto">
+      <div class="split-container">
+        
+        <!-- Panel Izquierdo: Imagen del Carnet con herramientas de manipulación -->
+        <div class="panel-imagen">
+          <div class="toolbar-imagen">
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-sm btn-outline" onclick="rotarImagen(-90)">↺ -90°</button>
+              <button class="btn btn-sm btn-outline" onclick="rotarImagen(90)">↻ +90°</button>
+              <button class="btn btn-sm btn-outline" onclick="rotarImagen(180)">↕ 180°</button>
+              <button class="btn btn-sm btn-outline" onclick="toggleInvertirColor()">🌓 Contraste</button>
+              <button class="btn btn-sm btn-outline" onclick="zoomImagen(1.2)">🔍 +</button>
+              <button class="btn btn-sm btn-outline" onclick="zoomImagen(0.8)">🔍 -</button>
+              <button class="btn btn-sm btn-outline" onclick="resetImagen()">Reset</button>
+            </div>
+            <a id="link-mi3f-externo" href="#" target="_blank" class="btn btn-sm btn-blanco">
+              ↗️ Abrir en Mi3F
+            </a>
+          </div>
+          <div class="image-viewport" id="viewport-imagen">
+            <img id="img-carnet" src="" alt="Certificado de vacunación">
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Datos clínicos y sugerencias de IA -->
+        <div class="panel-auditoria">
+          <div class="nino-header">
+            <div>
+              <h2 id="aud-nombre">Seleccione un menor</h2>
+              <div class="nino-tags">
+                <span><strong>DNI:</strong> <span id="aud-dni">--</span></span>
+                <span><strong>F. Nac:</strong> <span id="aud-fnac">--</span></span>
+                <span><strong>Edad:</strong> <span id="aud-edad">--</span></span>
+                <span><strong>Jardín:</strong> <span id="aud-jardin">--</span></span>
+                <span><strong>Sala:</strong> <span id="aud-sala">--</span></span>
+                <span id="aud-formato-tag" class="oculto"><span class="badge" style="background:#FEE2E2; color:#B91C1C;">📄 Archivo PDF</span></span>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-sm btn-azul" onclick="analizarActualConIA()">
+                🤖 Procesar este Certificado con IA
+              </button>
+            </div>
+          </div>
+
+          <!-- Alerta de Revisión Humana si la IA detectó inconsistencia o baja calidad -->
+          <div id="box-alerta-revision" class="alerta-revision-box oculto">
+            <div class="alerta-revision-title">
+              ⚠️ ATENCIÓN: El motor IA sugiere revisión humana en este caso
+            </div>
+            <div class="alerta-revision-desc" id="aud-motivo-alerta">
+              --
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; margin-bottom: 12px;">
+            <div><strong>Calidad Imagen:</strong> <span id="aud-calidad" class="badge">--</span></div>
+            <div><strong>Estado Detectado:</strong> <span id="aud-estado" class="badge">--</span></div>
+          </div>
+
+          <!-- Tabla de Vacunas Faltantes Obligatorias para su edad -->
+          <div class="seccion-titulo" style="color: #B45309;">
+            <span>⚠️ Vacunas Faltantes según su Edad</span>
+            <small style="font-size: 11px; text-transform:none; font-weight: normal; color: #78350F;">
+              Podés marcar como aplicada si la visualizás tapada por un sticker o sello
+            </small>
+          </div>
+          <table class="vacunas-tabla">
+            <thead>
+              <tr>
+                <th>Vacuna Obligatoria</th>
+                <th>Dosis Requerida</th>
+                <th>Edad Hito</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acción de Validación</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-vacunas-faltantes">
+              <tr><td colspan="5" style="text-align:center;">Esquema al día o sin procesar</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Tabla de Vacunas Detectadas -->
+          <div class="seccion-titulo">
+            <span>💉 Vacunas Aplicadas Registradas</span>
+          </div>
+          <table class="vacunas-tabla">
+            <thead>
+              <tr>
+                <th>Vacuna</th>
+                <th>Dosis</th>
+                <th>Fecha Aplicación</th>
+                <th>Lote / Sello</th>
+                <th>Certeza</th>
+                <th style="text-align: right;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-vacunas-detectadas">
+              <tr><td colspan="6" style="text-align:center;">Sin datos procesados</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Barra de Acciones del Auditor Humano: Los 3 Caminos de Resolución -->
+          <div class="acciones-humano" style="flex-wrap: wrap; justify-content: space-between;">
+            <div>
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--gris-suave);">
+                Resolución de Auditoría:
+              </span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-rojo" onclick="solicitarReenvioDocumentacion()">
+                📤 Solicitar Reenvío (Falta Información / Hoja)
+              </button>
+              <button class="btn btn-amarillo" onclick="confirmarEsquemaIncompleto()">
+                ⚠️ Confirmar Esquema Incompleto
+              </button>
+              <button class="btn btn-verde" onclick="aprobarRevisionHumana('AL_DIA')">
+                ✅ Aprobar Esquema Al Día
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let rotacionActual = 0;
+    let zoomActual = 1;
+    let colorInvertido = false;
+    let codigoActual = null;
+    let intervaloPollLote = null;
+
+    async function cargarMetricas() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('stat-total').innerText = data.total_inscriptos || 0;
+        document.getElementById('stat-descargados').innerText = data.total_con_certificado || 0;
+        document.getElementById('stat-procesados').innerText = data.procesados_ia || 0;
+        document.getElementById('stat-aldia').innerText = data.al_dia || 0;
+        document.getElementById('stat-incompleto').innerText = data.incompletos || 0;
+        document.getElementById('stat-revision').innerText = data.requiere_revision_humana || 0;
+        document.getElementById('stat-solicitar').innerText = data.solicitar_reenvio || 0;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function cargarInscriptos() {
+      const q = document.getElementById('filtro-q').value;
+      const jardin = document.getElementById('filtro-jardin').value;
+      const estado = document.getElementById('filtro-estado').value;
+      const revision = document.getElementById('filtro-solo-revision').checked ? '1' : '';
+
+      const url = `/api/inscriptos?q=${encodeURIComponent(q)}&jardin=${encodeURIComponent(jardin)}&estado=${encodeURIComponent(estado)}&revision=${revision}`;
+      const res = await fetch(url);
+      const resJson = await res.json();
+
+      const tbody = document.getElementById('tabla-inscriptos-body');
+      tbody.innerHTML = '';
+
+      if (resJson.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 20px;">No se encontraron inscriptos con los filtros seleccionados.</td></tr>';
+        return;
+      }
+
+      resJson.data.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        // Badge Estado
+        let badgeEstado = '<span class="badge" style="background:#E2E8F0; color:#64748B;">Pendiente</span>';
+        if (item.estado_esquema === 'AL_DIA') badgeEstado = '<span class="badge badge-al-dia">Al Día</span>';
+        else if (item.estado_esquema === 'INCOMPLETO') badgeEstado = '<span class="badge badge-incompleto">Incompleto</span>';
+        else if (item.estado_esquema === 'REVISION_REQUERIDA') badgeEstado = '<span class="badge badge-revision">Revisión Requerida</span>';
+        else if (item.estado_esquema === 'SOLICITAR_REENVIO') badgeEstado = '<span class="badge badge-solicitar">Solicitar Reenvío</span>';
+
+        // Badge Calidad
+        let badgeCalidad = '<span class="badge">--</span>';
+        if (item.calidad_imagen === 'ALTA') badgeCalidad = '<span class="badge badge-calidad-alta">Alta</span>';
+        else if (item.calidad_imagen === 'MEDIA') badgeCalidad = '<span class="badge badge-calidad-media">Media</span>';
+        else if (item.calidad_imagen === 'BAJA' || item.calidad_imagen === 'INVALIDA') badgeCalidad = '<span class="badge badge-calidad-baja">Baja / Crítica</span>';
+
+        // Diagnóstico / Motivo de Revisión
+        let motivoHtml = '<span style="color:#94A3B8; font-size:12px;">Sin observaciones</span>';
+        if (item.requiere_revision_humana || item.estado_esquema === 'REVISION_REQUERIDA') {
+          const motivoTxt = item.motivo_revision || 'Inconsistencia detectada en el certificado.';
+          motivoHtml = `
+            <div style="max-width: 320px; font-size: 11px; line-height: 1.35; color: #991B1B; background: #FEF2F2; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #DC2626;">
+              <strong>⚠️ Requiere Revisión:</strong> ${motivoTxt}
+            </div>
+          `;
+        } else if (item.revisado_por_humano) {
+          motivoHtml = '<span style="color:#059669; font-size:12px; font-weight:600;">✅ Validado por Auditor Humano</span>';
+        } else if (item.estado_esquema === 'AL_DIA') {
+          motivoHtml = '<span style="color:#059669; font-size:12px; font-weight:600;">✅ Esquema completo verificado</span>';
+        } else if (item.estado_esquema === 'INCOMPLETO') {
+          motivoHtml = '<span style="color:#B45309; font-size:12px;">Faltan vacunas para la edad</span>';
+        }
+
+        tr.innerHTML = `
+          <td><strong>${item.codigo_tramite}</strong></td>
+          <td>${item.dni_menor || '--'}</td>
+          <td><strong>${item.apellido_menor || ''}, ${item.nombre_menor || ''}</strong></td>
+          <td>${item.jardin || '--'}<br><small style="color:#64748B;">${item.sala || ''}</small></td>
+          <td>${item.edad_meses ? item.edad_meses + ' m' : '--'}</td>
+          <td>${badgeEstado}</td>
+          <td>${badgeCalidad}</td>
+          <td>${motivoHtml}</td>
+          <td>
+            <button class="btn btn-sm btn-azul" onclick="abrirAuditoria('${item.codigo_tramite}')">
+              👁️ Auditar
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function abrirAuditoria(codigo) {
+      codigoActual = codigo;
+      cambiarTab('auditoria');
+
+      const res = await fetch(`/api/inscripto/${codigo}`);
+      const data = await res.json();
+      const nino = data.inscripto;
+      const aud = data.auditoria;
+      const archivos = data.archivos;
+
+      document.getElementById('aud-nombre').innerText = `${nino.apellido_menor}, ${nino.nombre_menor}`;
+      document.getElementById('aud-dni').innerText = nino.dni_menor || '--';
+      document.getElementById('aud-fnac').innerText = nino.fecha_nacimiento || '--';
+      document.getElementById('aud-edad').innerText = (aud && aud.edad_meses ? aud.edad_meses + ' meses' : '--');
+      document.getElementById('aud-jardin').innerText = nino.jardin || '--';
+      document.getElementById('aud-sala').innerText = nino.sala || '--';
+
+      document.getElementById('link-mi3f-externo').href = `https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=${codigo}`;
+
+      // Configurar imagen
+      const imgEl = document.getElementById('img-carnet');
+      const esPdf = archivos && archivos.length > 0 && archivos[0].nombre_archivo.toLowerCase().endsWith('.pdf');
+      const tagPdf = document.getElementById('aud-formato-tag');
+      if (esPdf) tagPdf.classList.remove('oculto');
+      else tagPdf.classList.add('oculto');
+      if (archivos && archivos.length > 0) {
+        imgEl.src = `/api/imagen/${encodeURIComponent(archivos[0].nombre_archivo)}`;
+      } else {
+        imgEl.src = '';
+        imgEl.alt = 'Sin imagen de certificado descargada aún (Haga clic en Procesar con IA)';
+      }
+      resetImagen();
+
+      // Alertas de calidad y revisión humana
+      const boxAlerta = document.getElementById('box-alerta-revision');
+      if (aud && aud.requiere_revision_humana) {
+        boxAlerta.classList.remove('oculto');
+        document.getElementById('aud-motivo-alerta').innerText = aud.motivo_revision || 'Inconsistencia detectada en el certificado.';
+      } else {
+        boxAlerta.classList.add('oculto');
+      }
+
+      document.getElementById('aud-calidad').innerText = aud ? aud.calidad_imagen : 'Sin procesar';
+      document.getElementById('aud-estado').innerText = aud ? aud.estado_esquema : 'Pendiente';
+
+      // 1. Tabla de Vacunas Faltantes con botón de validación interactiva
+      const tFaltantes = document.getElementById('tabla-vacunas-faltantes');
+      tFaltantes.innerHTML = '';
+      if (aud && aud.vacunas_faltantes_json) {
+        const faltantes = JSON.parse(aud.vacunas_faltantes_json);
+        if (faltantes.length === 0) {
+          tFaltantes.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#059669; font-weight:600; padding:16px;">🎉 ¡Esquema de vacunación completo para su edad!</td></tr>';
+        } else {
+          faltantes.forEach(f => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><strong>${f.vacuna}</strong></td>
+              <td>${f.dosis}</td>
+              <td>${f.edad_recomendada_meses || f.edad_obligatoria_meses || '--'} meses</td>
+              <td><span class="badge badge-incompleto">Faltante</span></td>
+              <td style="text-align: right;">
+                <button class="btn btn-sm btn-verde" onclick="marcarVacunaManual('${f.vacuna}', '${f.dosis}', 'APLICAR')">
+                  ✅ Marcar como Aplicada
+                </button>
+              </td>
+            `;
+            tFaltantes.appendChild(tr);
+          });
+        }
+      } else {
+        tFaltantes.innerHTML = '<tr><td colspan="5" style="text-align:center;">Pendiente de análisis con IA.</td></tr>';
+      }
+
+      // 2. Tabla de Vacunas Detectadas con opción de desmarcar
+      const tDetectadas = document.getElementById('tabla-vacunas-detectadas');
+      tDetectadas.innerHTML = '';
+      if (aud && aud.vacunas_detectadas_json) {
+        const detectadas = JSON.parse(aud.vacunas_detectadas_json);
+        if (detectadas.length === 0) {
+          tDetectadas.innerHTML = '<tr><td colspan="6" style="text-align:center;">No se reconocieron vacunas con certeza.</td></tr>';
+        } else {
+          detectadas.forEach(v => {
+            const tr = document.createElement('tr');
+            const esHumano = v.confianza_lectura === 'VALIDADA_POR_HUMANO';
+            const badgeCerteza = esHumano 
+              ? '<span class="badge badge-humano">Validada por Humano</span>' 
+              : `<span class="badge badge-calidad-alta">${v.confianza_lectura || 'ALTA'}</span>`;
+
+            tr.innerHTML = `
+              <td><strong>${v.vacuna_canonica || v.vacuna}</strong></td>
+              <td>${v.dosis}</td>
+              <td>${v.fecha_aplicacion}</td>
+              <td><small>${v.lote || '--'}</small></td>
+              <td>${badgeCerteza}</td>
+              <td style="text-align: right;">
+                <button class="btn btn-sm btn-blanco" style="color:#DC2626;" onclick="marcarVacunaManual('${v.vacuna_canonica || v.vacuna}', '${v.dosis}', 'DESMARCAR')">
+                  ❌ Quitar
+                </button>
+              </td>
+            `;
+            tDetectadas.appendChild(tr);
+          });
+        }
+      } else {
+        tDetectadas.innerHTML = '<tr><td colspan="6" style="text-align:center;">Pendiente de análisis con IA.</td></tr>';
+      }
+    }
+
+    /* Sistema de Notificaciones Toast (No bloqueantes) */
+    function mostrarToast(mensaje, tipo = 'success') {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position:fixed; top:24px; right:24px; z-index:99999; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      const bg = tipo === 'success' ? '#10B981' : (tipo === 'error' ? '#EF4444' : '#163C68');
+      toast.style.cssText = `background:${bg}; color:#fff; padding:12px 20px; border-radius:8px; font-size:13px; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; align-items:center; gap:8px; opacity:0; transform:translateY(-10px); transition:all 0.25s ease; pointer-events:auto;`;
+      toast.innerText = mensaje;
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+      });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    /* Alternar / Marcar vacuna individualmente (Actualización Reactiva Inmediata) */
+    async function marcarVacunaManual(vacuna, dosis, accion) {
+      if (!codigoActual) return;
+      let motivo = "";
+      if (accion === 'APLICAR') {
+        motivo = prompt(
+          `Validar ${vacuna} (${dosis}):\n¿Alguna aclaración? (Opcional, podés dejar en blanco y tocar Aceptar)`,
+          ""
+        );
+        if (motivo === null) return; // Si canceló el prompt
+        if (!motivo.trim()) motivo = "Validada visualmente en el carnet";
+      } else {
+        if (!confirm(`¿Estás seguro de quitar ${vacuna} (${dosis}) de las vacunas aplicadas?`)) return;
+      }
+
+      // 1. Actualización optimista inmediata en pantalla (0ms de latencia visual)
+      if (accion === 'APLICAR') {
+        mostrarToast(`✅ ${vacuna} (${dosis}) marcada como aplicada.`);
+      } else {
+        mostrarToast(`❌ ${vacuna} (${dosis}) desmarcada.`, 'error');
+      }
+
+      try {
+        const res = await fetch('/api/accion/marcar_vacuna_individual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_tramite: codigoActual,
+            vacuna: vacuna,
+            dosis: dosis,
+            accion: accion,
+            motivo: motivo
+          })
+        });
+        const resJson = await res.json();
+        
+        // 2. Refrescar datos reales del servidor
+        await abrirAuditoria(codigoActual);
+        cargarMetricas();
+        cargarInscriptos();
+      } catch (e) {
+        mostrarToast('Error de conexión con el servidor', 'error');
+      }
+    }
+
+    /* Procesamiento individual con IA */
+    async function analizarActualConIA() {
+      if (!codigoActual) return;
+      const btn = event.target;
+      const origText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span> Procesando con Gemini...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/accion/analizar_tramite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigo_tramite: codigoActual })
+        });
+        const resJson = await res.json();
+        if (resJson.status === 'ok') {
+          mostrarToast('🤖 Certificado analizado exitosamente con IA.');
+          await abrirAuditoria(codigoActual);
+          cargarMetricas();
+          cargarInscriptos();
+        } else {
+          mostrarToast('Error: ' + resJson.mensaje, 'error');
+        }
+      } catch (e) {
+        mostrarToast('Error conectando al servidor: ' + e, 'error');
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }
+
+    /* Procesamiento Masivo por Lote */
+    async function iniciarProcesamientoLote() {
+      const cant = document.getElementById('select-lote-cant').value;
+      const btn = document.getElementById('btn-iniciar-ia');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Iniciando lote...';
+
+      try {
+        const res = await fetch('/api/accion/procesar_lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limite: parseInt(cant) })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          mostrarToast(`🚀 Iniciada descarga y análisis de ${cant} certificados en segundo plano.`);
+          document.getElementById('banner-progreso-lote').classList.remove('oculto');
+          iniciarMonitoreoLote();
+        } else {
+          mostrarToast('Error: ' + data.mensaje, 'error');
+          btn.disabled = false;
+          btn.innerHTML = '🚀 Iniciar Procesamiento con IA';
+        }
+      } catch (e) {
+        mostrarToast('Error de conexión: ' + e, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Iniciar Procesamiento con IA';
+      }
+    }
+
+    function iniciarMonitoreoLote() {
+      if (intervaloPollLote) clearInterval(intervaloPollLote);
+      intervaloPollLote = setInterval(async () => {
+        try {
+          const res = await fetch('/api/estado_lote');
+          const estado = await res.json();
+          if (estado.corriendo) {
+            const porc = Math.round((estado.procesados / (estado.total || 1)) * 100);
+            document.getElementById('progreso-lote-txt').innerText = `Procesando: ${estado.actual || 'Descargando y analizando...'}`;
+            document.getElementById('progreso-lote-count').innerText = `${estado.procesados} / ${estado.total} (${porc}%)`;
+            document.getElementById('barra-progreso-fill').style.width = `${porc}%`;
+          } else {
+            clearInterval(intervaloPollLote);
+            intervaloPollLote = null;
+            document.getElementById('btn-iniciar-ia').disabled = false;
+            document.getElementById('btn-iniciar-ia').innerHTML = '🚀 Iniciar Procesamiento con IA';
+            document.getElementById('progreso-lote-txt').innerText = estado.mensaje || 'Procesamiento de lote finalizado.';
+            document.getElementById('barra-progreso-fill').style.width = '100%';
+            setTimeout(() => {
+              document.getElementById('banner-progreso-lote').classList.add('oculto');
+            }, 5000);
+            cargarMetricas();
+            cargarInscriptos();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }, 2000);
+    }
+
+    /* Camino 1: Aprobación Total (Al Día) */
+    async function aprobarRevisionHumana(estado) {
+      if (!codigoActual) return;
+      const motivo = prompt(
+        "Aprobar todo el esquema como Al Día:\n¿Querés ingresar alguna aclaración o feedback de aprendizaje? (Opcional)",
+        ""
+      );
+      if (motivo === null) return; // Si canceló
+      
+      const audEstadoEl = document.getElementById('aud-estado');
+      audEstadoEl.className = 'badge badge-al-dia';
+      audEstadoEl.innerText = 'Al Día';
+
+      const boxAlerta = document.getElementById('box-alerta-revision');
+      if (boxAlerta) boxAlerta.classList.add('oculto');
+
+      const tFaltantes = document.getElementById('tabla-vacunas-faltantes');
+      tFaltantes.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#059669; font-weight:600; padding:16px;">🎉 ¡Esquema de vacunación completo para su edad! (Aprobado manualmente)</td></tr>';
+
+      mostrarToast('✅ Todo el esquema aprobado como Al Día.');
+
+      try {
+        await fetch('/api/accion/guardar_revision_humana', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_tramite: codigoActual,
+            estado_esquema: 'AL_DIA',
+            observaciones: motivo && motivo.trim() ? motivo.trim() : 'Aprobado manualmente tras verificación visual'
+          })
+        });
+        
+        await cargarMetricas();
+        await cargarInscriptos();
+        await abrirAuditoria(codigoActual);
+      } catch (e) {
+        mostrarToast('Error guardando en el servidor', 'error');
+      }
+    }
+
+    /* Camino 2: Confirmar Esquema Incompleto (El carnet se ve bien pero realmente le faltan vacunas) */
+    async function confirmarEsquemaIncompleto() {
+      if (!codigoActual) return;
+      const motivo = prompt(
+        "Confirmar Esquema Incompleto:\n(El documento es legible pero le faltan dosis requeridas para su edad)\nPodés ingresar observaciones adicionales (Opcional):",
+        "Carnet verificado: faltan dosis obligatorias para su edad"
+      );
+      if (motivo === null) return;
+
+      const audEstadoEl = document.getElementById('aud-estado');
+      audEstadoEl.className = 'badge badge-incompleto';
+      audEstadoEl.innerText = 'Incompleto';
+
+      const boxAlerta = document.getElementById('box-alerta-revision');
+      if (boxAlerta) boxAlerta.classList.add('oculto');
+
+      mostrarToast('⚠️ Esquema confirmado como Incompleto (Auditado).');
+
+      try {
+        await fetch('/api/accion/guardar_revision_humana', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_tramite: codigoActual,
+            estado_esquema: 'INCOMPLETO',
+            observaciones: motivo && motivo.trim() ? motivo.trim() : 'Esquema incompleto verificado por auditor'
+          })
+        });
+        
+        await cargarMetricas();
+        await cargarInscriptos();
+        await abrirAuditoria(codigoActual);
+      } catch (e) {
+        mostrarToast('Error guardando en el servidor', 'error');
+      }
+    }
+
+    /* Camino 3: Solicitar Reenvío (Falta información, falta hoja, carnet cortado, foto ilegible) */
+    async function solicitarReenvioDocumentacion() {
+      if (!codigoActual) return;
+      const motivo = prompt(
+        "Solicitar Reenvío a la familia (Falta Información):\nIndique qué falta o por qué no se puede auditar:\n(Ej: Falta subir hoja 2 del carnet / Foto muy borrosa / Subieron DNI en vez de carnet)",
+        "Falta hoja o reverso del carnet con registros de vacunas"
+      );
+      if (!motivo || !motivo.trim()) return;
+
+      const audEstadoEl = document.getElementById('aud-estado');
+      audEstadoEl.className = 'badge badge-solicitar';
+      audEstadoEl.innerText = 'Solicitar Reenvío';
+
+      mostrarToast('📤 Marcado para solicitar reenvío a la familia.');
+
+      try {
+        await fetch('/api/accion/guardar_revision_humana', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_tramite: codigoActual,
+            estado_esquema: 'SOLICITAR_REENVIO',
+            observaciones: 'SOLICITAR REENVÍO: ' + motivo.trim()
+          })
+        });
+        
+        await cargarMetricas();
+        await cargarInscriptos();
+        await abrirAuditoria(codigoActual);
+      } catch (e) {
+        mostrarToast('Error guardando en el servidor', 'error');
+      }
+    }
+
+    async function exportarExcel() {
+      const res = await fetch('/api/exportar_excel');
+      const data = await res.json();
+      if (data.status === 'ok') {
+        alert(`Informe exportado con éxito:\n${data.ruta_completa}`);
+      }
+    }
+
+    function cambiarTab(tab) {
+      if (tab === 'padron') {
+        document.getElementById('vista-padron').classList.remove('oculto');
+        document.getElementById('vista-auditoria').classList.add('oculto');
+        document.getElementById('btn-tab-padron').classList.add('active');
+        document.getElementById('btn-tab-auditoria').classList.remove('active');
+      } else {
+        document.getElementById('vista-padron').classList.add('oculto');
+        document.getElementById('vista-auditoria').classList.remove('oculto');
+        document.getElementById('btn-tab-padron').classList.remove('active');
+        document.getElementById('btn-tab-auditoria').classList.add('active');
+      }
+    }
+
+    /* Manipulación de imagen */
+    function rotarImagen(grados) {
+      rotacionActual = (rotacionActual + grados) % 360;
+      aplicarTransformaciones();
+    }
+    function zoomImagen(factor) {
+      zoomActual = Math.max(0.4, Math.min(zoomActual * factor, 4.0));
+      aplicarTransformaciones();
+    }
+    function toggleInvertirColor() {
+      colorInvertido = !colorInvertido;
+      aplicarTransformaciones();
+    }
+    function resetImagen() {
+      rotacionActual = 0;
+      zoomActual = 1;
+      colorInvertido = false;
+      aplicarTransformaciones();
+    }
+    function aplicarTransformaciones() {
+      const img = document.getElementById('img-carnet');
+      img.style.transform = `rotate(${rotacionActual}deg) scale(${zoomActual})`;
+      img.style.filter = colorInvertido ? 'invert(1) contrast(1.5)' : 'none';
+    }
+
+    // Inicialización
+    cargarMetricas();
+    cargarInscriptos();
+  </script>
+</body>
+</html>

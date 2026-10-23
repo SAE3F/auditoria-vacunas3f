@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+env/
+ejemplos_descargados/
+resultados_auditoria/*.xlsx

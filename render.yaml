@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: auditoria-vacunas-3f
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python panel_web.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GEMINI_API_KEY
+        sync: false

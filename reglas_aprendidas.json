@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "fecha": "2026-10-18",
+    "regla": "Si en el Carnet Unificado Nacional no figura la dosis neonatal de BCG o Hepatitis B en la tabla principal, verificar si la foto está cortada arriba o si corresponde a una segunda página, y marcarlo explícitamente en el motivo de revisión.",
+    "origen": "Auditoría inicial de calibración"
+  },
+  {
+    "id": 2,
+    "fecha": "2026-10-18",
+    "regla": "Los stickers con nombres comerciales como 'Menveo' corresponden a Meningococo; 'Prevenar' a Neumococo Conjugada; 'Rotarix' a Rotavirus; 'Viraflu' a Gripe.",
+    "origen": "Identificación de marcas de viales"
+  },
+  {
+    "id": 3,
+    "fecha": "2026-10-18",
+    "tramite_referencia": "340844",
+    "regla": "Si BCG y Hepatitis B están selladas en la solapa de maternidad, considérelas aplicadas si existe firma del hospital al nacer.",
+    "origen": "Feedback humano: En este carnet la BCG y Hepatitis B figuran selladas en la s"
+  },
+  {
+    "id": 4,
+    "fecha": "2026-10-18",
+    "tramite_referencia": "340844",
+    "regla": "Considera administrada una vacuna si, a pesar de estar parcialmente cubierta por un sticker u otro objeto, una firma u otro indicio de validación es claramente visible.",
+    "origen": "Feedback humano: Figura arriba de todo en el carnet, tapada por sticker de vi"
+  },
+  {
+    "id": 5,
+    "fecha": "2026-10-18",
+    "tramite_referencia": "340844",
+    "regla": "Siempre verifica la completitud del esquema de vacunación considerando todo el carnet, incluso si algunos detalles están parcialmente cubiertos o registrados en otras secciones.",
+    "origen": "Feedback humano: Esquema completo verificado"
+  }
+]
