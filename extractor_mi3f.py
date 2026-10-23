@@ -99,28 +99,29 @@ def obtener_sesion_requests() -> requests.Session:
         "Connection": "keep-alive"
     })
     
-    # 1. Prioridad: Variable de entorno en la nube (Render)
-    if MI3F_PHPSESSID:
-        session.cookies.set("PHPSESSID", MI3F_PHPSESSID, domain="backend.mistramites.tresdefebrero.gob.ar")
+    # 1. Prioridad: Variable de entorno en la nube (Render) o cookie configurada
+    phpsessid = MI3F_PHPSESSID or os.environ.get("MI3F_PHPSESSID")
+    if phpsessid:
+        session.cookies.set("PHPSESSID", phpsessid.strip(), domain="backend.mistramites.tresdefebrero.gob.ar")
         return session
 
     # 2. Archivo de sesión local
-    if ARCHIVO_SESION.exists():
+    if ARCHIVO_SESION and Path(ARCHIVO_SESION).exists():
         try:
             with open(ARCHIVO_SESION, "r", encoding="utf-8") as f:
                 data = json.load(f)
             session.headers.update({"User-Agent": data.get("user_agent", "Mozilla/5.0")})
             for cookie in data.get("cookies", []):
                 session.cookies.set(cookie["name"], cookie["value"], domain=cookie.get("domain", "backend.mistramites.tresdefebrero.gob.ar"))
-            
-            # Test rápido de validez
-            r = session.get(URL_LOGIN, timeout=8, verify=False)
-            if "sso.tresdefebrero.gob.ar" not in r.url and r.status_code == 200:
-                return session
+            return session
         except Exception:
             pass
+
+    # Si estamos en un servidor sin display ni Chrome (como Render), NO ejecutar Selenium para evitar timeout
+    if os.environ.get("RENDER") or not os.name == "nt":
+        return session
             
-    # Si la sesión no es válida y estamos en un entorno con Chrome, autenticar con Selenium
+    # Si estamos en local y la sesión no es válida, autenticar con Selenium
     try:
         return autenticar_selenium()
     except Exception as e:

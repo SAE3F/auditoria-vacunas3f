@@ -128,7 +128,7 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                         url_download = f"https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo={cod_doc}&seccion={sec}&tramiteproductora={cod_tra}"
                         
                         ses = obtener_sesion_requests()
-                        resp_proxy = ses.get(url_download, timeout=20, verify=False)
+                        resp_proxy = ses.get(url_download, timeout=12, verify=False)
                         if resp_proxy.status_code == 200 and len(resp_proxy.content) > 100:
                             raw_bytes = resp_proxy.content
                             
