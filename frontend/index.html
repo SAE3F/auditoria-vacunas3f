@@ -1023,9 +1023,19 @@
 
         <div style="margin-bottom: 16px;">
           <label style="display: block; font-size: 12px; font-weight: 700; color: var(--texto-principal); margin-bottom: 6px;">
-            Cookie PHPSESSID:
+            Cookie PHPSESSID (Mi3F):
           </label>
-          <input type="text" id="input-phpsessid" placeholder="Ej: cie0n6hes0u26qaplruhhu349r" style="width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid var(--borde); border-radius: 6px; font-family: monospace;">
+          <input type="text" id="input-phpsessid" placeholder="Ej: 6urgaa6pho0e46rgec2ivmdqln" style="width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid var(--borde); border-radius: 6px; font-family: monospace;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--texto-principal);">
+              Clave de API Gemini (IA):
+            </label>
+            <span id="badge-gemini-status" style="font-size: 11px; font-weight: 600; color: #64748B;">Comprobando...</span>
+          </div>
+          <input type="password" id="input-gemini-key" placeholder="AIzaSy... (Dejar en blanco si ya está en Render)" style="width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid var(--borde); border-radius: 6px; font-family: monospace;">
         </div>
 
         <div class="guia-card azul" style="margin-bottom: 0;">
@@ -1620,6 +1630,7 @@
       const dot = document.getElementById('dot-sesion');
       const txt = document.getElementById('txt-sesion');
       const txtModal = document.getElementById('txt-estado-sesion-modal');
+      const badgeGem = document.getElementById('badge-gemini-status');
       try {
         const res = await fetch('/api/estado_sesion');
         const data = await res.json();
@@ -1633,6 +1644,14 @@
           if (txt) txt.innerText = 'Mi3F Desconectado';
           if (txtModal) txtModal.innerHTML = '<span style="color:#DC2626; font-weight:bold;">🔴 Desconectada o expirada</span>';
           if (alerta) alert('La sesión actual en Mi3F no es válida o redirigió al login.');
+        }
+
+        if (badgeGem) {
+          if (data.gemini_configurada) {
+            badgeGem.innerHTML = `<span style="color:#059669; font-weight:bold;">🟢 Configurada (${data.gemini_prefix || 'OK'})</span>`;
+          } else {
+            badgeGem.innerHTML = '<span style="color:#DC2626; font-weight:bold;">🔴 Falta configurar</span>';
+          }
         }
       } catch (e) {
         if (dot) dot.style.background = '#F59E0B';
@@ -1663,30 +1682,38 @@
     async function guardarSesionMi3F() {
       const input = document.getElementById('input-phpsessid');
       const val = input ? input.value.trim() : '';
+      const inputGemini = document.getElementById('input-gemini-key');
+      const valGemini = inputGemini ? inputGemini.value.trim() : '';
       const msg = document.getElementById('msg-guardar-sesion');
       const btn = document.getElementById('btn-guardar-sesion');
-      if (!val) {
-        alert('Por favor ingrese el valor de la cookie PHPSESSID');
+
+      if (!val && !valGemini) {
+        alert('Por favor ingrese al menos el valor de la cookie PHPSESSID o la clave de Gemini');
         return;
       }
       btn.disabled = true;
-      btn.innerText = 'Verificando con Mi3F...';
+      btn.innerText = 'Guardando configuración...';
       msg.innerText = '';
       try {
+        const payload = {};
+        if (val) payload.phpsessid = val;
+        if (valGemini) payload.gemini_api_key = valGemini;
+
         const res = await fetch('/api/configurar_sesion', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ phpsessid: val })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (data.status === 'ok') {
           msg.style.color = '#059669';
-          msg.innerText = '✅ ¡Conectado con éxito!';
+          msg.innerText = `✅ ¡${data.mensaje || 'Configuración guardada'}!`;
           verificarEstadoSesion();
+          if (inputGemini) inputGemini.value = '';
           setTimeout(() => {
             cerrarModalSesion();
             if (codigoActual) cargarDetalleInscripto(codigoActual);
-          }, 1200);
+          }, 1500);
         } else {
           msg.style.color = '#DC2626';
           msg.innerText = `❌ ${data.mensaje || 'Error al conectar'}`;

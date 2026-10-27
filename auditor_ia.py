@@ -11,7 +11,8 @@ import io
 import fitz
 from PIL import Image
 
-from config import GEMINI_API_KEY, MODELO_VISION
+from config import GEMINI_API_KEY, MODELO_VISION, DB_PATH
+import sqlite3
 
 PROMPT_SISTEMA_VACUNACION = """
 Sos un médico pediatra auditor y especialista en lectura de registros sanitarios de la República Argentina.
@@ -119,6 +120,18 @@ def analizar_certificado_con_ia(rutas_imagenes: List[Path], api_key: Optional[st
     Envía una o más imágenes a Gemini Multimodal para extraer vacunas y clasificar calidad.
     """
     key = api_key or GEMINI_API_KEY
+    if not key:
+        try:
+            with sqlite3.connect(DB_PATH) as conn:
+                c = conn.cursor()
+                c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
+                c.execute("SELECT valor FROM config_app WHERE clave = 'GEMINI_API_KEY'")
+                row = c.fetchone()
+                if row and row[0]:
+                    key = row[0].strip()
+        except Exception:
+            pass
+
     if not key:
         return {
             "es_carnet_valido": False,

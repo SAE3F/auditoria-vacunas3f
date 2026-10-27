@@ -36,6 +36,24 @@ ESTADO_PROCESO_LOTE = {
     "mensaje": ""
 }
 
+def obtener_gemini_api_key(datos_post=None):
+    if datos_post and datos_post.get("api_key"):
+        return str(datos_post["api_key"]).strip()
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
+    if key:
+        return key.strip()
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            c = conn.cursor()
+            c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
+            c.execute("SELECT valor FROM config_app WHERE clave = 'GEMINI_API_KEY'")
+            row = c.fetchone()
+            if row and row[0]:
+                return row[0].strip()
+    except Exception:
+        pass
+    return GEMINI_API_KEY or ""
+
 class VacunacionAPIHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -209,24 +227,31 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                         valida = True
                 except Exception:
                     pass
+            gem_key = obtener_gemini_api_key()
             self._responder_json({
                 "activa": valida,
-                "cookie_configurada": bool("PHPSESSID=" in cookie_activa)
+                "cookie_configurada": bool("PHPSESSID=" in cookie_activa),
+                "gemini_configurada": bool(gem_key),
+                "gemini_prefix": (gem_key[:6] + "...") if gem_key else "NO_CONFIGURADA"
             })
             return
 
         # API: Diagnóstico de conexión Mi3F
         if path == "/api/diagnostico_mi3f":
             # Detectar si el usuario le puso otro nombre a la variable en Render
-            posibles_keys = [k for k in os.environ.keys() if any(x in k.upper() for x in ["MI3F", "PHP", "COOKIE", "SESSI", "PASS", "CUIL"])]
+            posibles_keys = [k for k in os.environ.keys() if any(x in k.upper() for x in ["MI3F", "PHP", "COOKIE", "SESSI", "PASS", "CUIL", "GEMINI", "GOOGLE"])]
             
             # Buscar el valor de sesión bajo cualquier clave coincidente
             phpsessid_val = os.environ.get("MI3F_PHPSESSID") or os.environ.get("PHPSESSID") or os.environ.get("MI3F_COOKIE") or ""
+            gem_key = obtener_gemini_api_key()
             
             diag = {
                 "env_mi3f_set": bool(phpsessid_val),
                 "env_mi3f_len": len(phpsessid_val.strip()),
                 "env_mi3f_prefix": (phpsessid_val.strip()[:4] + "...") if phpsessid_val else "NO_SET",
+                "gemini_api_key_set": bool(gem_key),
+                "gemini_api_key_len": len(gem_key),
+                "gemini_api_key_prefix": (gem_key[:6] + "...") if gem_key else "NO_CONFIGURADA",
                 "matching_env_keys_found": posibles_keys
             }
             try:
@@ -447,43 +472,61 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
         except Exception:
             datos = {}
 
-        # API: Configurar y persistir PHPSESSID en base de datos
+        # API: Configurar y persistir PHPSESSID y GEMINI_API_KEY en base de datos
         if path == "/api/configurar_sesion":
             nueva_cookie = str(datos.get("phpsessid", "")).strip()
+            nueva_gemini = str(datos.get("gemini_api_key", "")).strip()
+
             if nueva_cookie.startswith("PHPSESSID="):
                 nueva_cookie = nueva_cookie.replace("PHPSESSID=", "").strip()
-            
-            if not nueva_cookie:
-                self._responder_json({"status": "error", "mensaje": "Cookie PHPSESSID vacía."}, status=HTTPStatus.BAD_REQUEST)
+
+            respuestas_guardadas = []
+
+            if nueva_gemini:
+                try:
+                    with sqlite3.connect(DB_PATH) as conn:
+                        c = conn.cursor()
+                        c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
+                        c.execute("INSERT OR REPLACE INTO config_app (clave, valor) VALUES (?, ?)", ('GEMINI_API_KEY', nueva_gemini))
+                        conn.commit()
+                    respuestas_guardadas.append("API Key Gemini guardada")
+                except Exception as e_gem:
+                    print(f"Error guardando Gemini key: {e_gem}")
+
+            if nueva_cookie:
+                # Probar si funciona contra Mi3F
+                try:
+                    import requests
+                    s_test = requests.Session()
+                    s_test.trust_env = False
+                    s_test.headers["Cookie"] = f"PHPSESSID={nueva_cookie}"
+                    url_test = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=340844"
+                    r = s_test.get(url_test, timeout=8, verify=False)
+                    if "sso.tresdefebrero" in r.url or "iniciar sesión" in r.text.lower() or "ingreso" in r.url:
+                        self._responder_json({
+                            "status": "error",
+                            "mensaje": "La cookie de Mi3F ingresada no es válida o ya expiró (redirigió al login)."
+                        }, status=HTTPStatus.UNAUTHORIZED)
+                        return
+                except Exception as e_test:
+                    print(f"Aviso prueba sesion: {e_test}")
+
+                try:
+                    with sqlite3.connect(DB_PATH) as conn:
+                        c = conn.cursor()
+                        c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
+                        c.execute("INSERT OR REPLACE INTO config_app (clave, valor) VALUES (?, ?)", ('MI3F_PHPSESSID', nueva_cookie))
+                        conn.commit()
+                    respuestas_guardadas.append("Sesión Mi3F validada y conectada")
+                except Exception as e_db:
+                    self._responder_json({"status": "error", "mensaje": str(e_db)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                    return
+
+            if not respuestas_guardadas:
+                self._responder_json({"status": "error", "mensaje": "No se enviaron datos para configurar."}, status=HTTPStatus.BAD_REQUEST)
                 return
 
-            # Probar si funciona contra Mi3F
-            try:
-                import requests
-                s_test = requests.Session()
-                s_test.trust_env = False
-                s_test.headers["Cookie"] = f"PHPSESSID={nueva_cookie}"
-                url_test = "https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_unica_am.php?tramiteproductoracod=340844"
-                r = s_test.get(url_test, timeout=8, verify=False)
-                if "sso.tresdefebrero" in r.url or "iniciar sesión" in r.text.lower() or "ingreso" in r.url:
-                    self._responder_json({
-                        "status": "error",
-                        "mensaje": "La cookie ingresada no es válida o ya expiró en Mi3F (redirigió al login)."
-                    }, status=HTTPStatus.UNAUTHORIZED)
-                    return
-            except Exception as e_test:
-                print(f"Aviso prueba sesion: {e_test}")
-
-            # Persistir en SQLite
-            try:
-                with sqlite3.connect(DB_PATH) as conn:
-                    c = conn.cursor()
-                    c.execute("CREATE TABLE IF NOT EXISTS config_app (clave TEXT PRIMARY KEY, valor TEXT)")
-                    c.execute("INSERT OR REPLACE INTO config_app (clave, valor) VALUES (?, ?)", ('MI3F_PHPSESSID', nueva_cookie))
-                    conn.commit()
-                self._responder_json({"status": "ok", "mensaje": "¡Sesión configurada y validada exitosamente!"})
-            except Exception as e_db:
-                self._responder_json({"status": "error", "mensaje": str(e_db)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+            self._responder_json({"status": "ok", "mensaje": " y ".join(respuestas_guardadas) + " exitosamente."})
             return
 
         # API: Cargar Padrón Base desde Excel
@@ -512,7 +555,7 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
         # API: Analizar trámite con IA
         if path == "/api/accion/analizar_tramite":
             codigo = str(datos.get("codigo_tramite", "")).strip()
-            api_key = datos.get("api_key") or GEMINI_API_KEY
+            api_key = obtener_gemini_api_key(datos)
             if not codigo:
                 self._responder_json({"status": "error", "mensaje": "codigo_tramite requerido"}, status=HTTPStatus.BAD_REQUEST)
                 return
@@ -523,32 +566,50 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 cursor.execute("SELECT * FROM inscriptos WHERE codigo_tramite = ?", (codigo,))
                 inscripto = cursor.fetchone()
                 cursor.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (codigo,))
-                archivos = cursor.fetchall()
+                archivos = [dict(r) for r in cursor.fetchall()]
 
             if not inscripto:
                 self._responder_json({"status": "error", "mensaje": "Inscripto no encontrado"}, status=HTTPStatus.NOT_FOUND)
                 return
 
+            sesion = obtener_sesion_requests()
             # Si no tiene archivos descargados localmente, intentar descargar primero
             if not archivos:
-                sesion = obtener_sesion_requests()
-                descargar_certificado_tramite(sesion, codigo)
+                try:
+                    descargar_certificado_tramite(sesion, codigo)
+                except Exception as e_desc:
+                    print(f"Aviso descarga {codigo}: {e_desc}")
                 with sqlite3.connect(DB_PATH) as conn:
                     conn.row_factory = sqlite3.Row
                     cursor = conn.cursor()
                     cursor.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (codigo,))
-                    archivos = cursor.fetchall()
+                    archivos = [dict(r) for r in cursor.fetchall()]
 
-            # Obtener rutas válidas de archivos buscando en DIR_CERTIFICADOS o ruta directa
+            # Obtener rutas válidas de archivos buscando en DIR_CERTIFICADOS o descargando de Mi3F
             rutas = []
             for r in archivos:
-                nombre = r["nombre_archivo"] or os.path.basename(r["ruta_local"])
-                p1 = DIR_CERTIFICADOS / nombre
-                p2 = Path(r["ruta_local"])
-                if p1.exists():
-                    rutas.append(p1)
-                elif p2.exists():
-                    rutas.append(p2)
+                nombre = r.get("nombre_archivo") or os.path.basename(r.get("ruta_local", ""))
+                p1 = (DIR_CERTIFICADOS / nombre) if nombre else None
+                p2 = Path(r.get("ruta_local", "")) if r.get("ruta_local") else None
+                
+                target = None
+                if p1 and p1.exists():
+                    target = p1
+                elif p2 and p2.exists():
+                    target = p2
+                elif p1:
+                    cod_doc = r.get("codigo_doc")
+                    sec = r.get("seccion") or "243"
+                    url_dl = f"https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo={cod_doc}&seccion={sec}&tramiteproductora={codigo}"
+                    r_dl = sesion.get(url_dl, timeout=15, verify=False)
+                    if r_dl.status_code == 200 and len(r_dl.content) > 100 and not (b"<!DOCTYPE html" in r_dl.content[:150]):
+                        with open(p1, "wb") as f_out:
+                            f_out.write(r_dl.content)
+                        target = p1
+
+                if target and target.exists():
+                    rutas.append(target)
+
             if not rutas:
                 self._responder_json({
                     "status": "error",
@@ -584,7 +645,7 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                         observaciones_ia=excluded.observaciones_ia,
                         fecha_analisis=excluded.fecha_analisis
                 """, (
-                    codigo, inscripto["dni_menor"], res_clinico["edad_meses"],
+                    codigo, inscripto.get("dni_menor", ""), res_clinico["edad_meses"],
                     res_ia.get("calidad_imagen", "MEDIA"), res_clinico["estado_esquema"],
                     1 if res_clinico["requiere_revision_humana"] else 0,
                     res_clinico["motivo_revision"],
@@ -605,7 +666,7 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
         # API: Procesamiento por Lote (Descarga + IA masiva)
         if path == "/api/accion/procesar_lote":
             limite = int(datos.get("limite", 10))
-            api_key = datos.get("api_key") or GEMINI_API_KEY
+            api_key = obtener_gemini_api_key(datos)
             
             def _tarea_segundo_plano():
                 global ESTADO_PROCESO_LOTE
@@ -635,31 +696,50 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                     for idx, p in enumerate(pendientes):
                         cod = p["codigo_tramite"]
                         fnac = p["fecha_nacimiento"]
-                        nom = f"{p.get('nombre_menor','')} {p.get('apellido_menor','')}"
+                        nom = f"{p.get('nombre_menor','')} {p.get('apellido_menor','')}".strip()
                         ESTADO_PROCESO_LOTE["procesados"] = idx + 1
                         ESTADO_PROCESO_LOTE["actual"] = f"{nom} (Trámite #{cod})"
 
                         try:
-                            descargar_certificado_tramite(sesion, cod)
+                            # 1. Asegurar descarga y registro de certificados
+                            try:
+                                descargar_certificado_tramite(sesion, cod)
+                            except Exception as e_desc:
+                                print(f"Aviso descarga lote {cod}: {e_desc}")
+
                             with sqlite3.connect(DB_PATH) as conn:
                                 conn.row_factory = sqlite3.Row
                                 c2 = conn.cursor()
-                                c2.execute("SELECT ruta_local FROM archivos_certificados WHERE codigo_tramite = ?", (cod,))
-                                archivos = [Path(r["ruta_local"]) for r in c2.fetchall() if Path(r["ruta_local"]).exists()]
+                                c2.execute("SELECT * FROM archivos_certificados WHERE codigo_tramite = ?", (cod,))
+                                archivos_db = [dict(r) for r in c2.fetchall()]
 
-                            if archivos and api_key:
-                                rutas = []
-                                for r in archivos:
-                                    nombre = r["nombre_archivo"] or os.path.basename(r["ruta_local"])
-                                    p1 = DIR_CERTIFICADOS / nombre
-                                    p2 = Path(r["ruta_local"])
-                                    if p1.exists():
-                                        rutas.append(p1)
-                                    elif p2.exists():
-                                        rutas.append(p2)
+                            rutas = []
+                            for r in archivos_db:
+                                nombre = r.get("nombre_archivo") or os.path.basename(r.get("ruta_local", ""))
+                                p1 = (DIR_CERTIFICADOS / nombre) if nombre else None
+                                p2 = Path(r.get("ruta_local", "")) if r.get("ruta_local") else None
 
-                                if rutas:
-                                    res_ia = analizar_certificado_con_ia(rutas, api_key=api_key)
+                                target = None
+                                if p1 and p1.exists():
+                                    target = p1
+                                elif p2 and p2.exists():
+                                    target = p2
+                                elif p1:
+                                    # Descargar a disco desde Mi3F
+                                    cod_doc = r.get("codigo_doc")
+                                    sec = r.get("seccion") or "243"
+                                    url_dl = f"https://backend.mistramites.tresdefebrero.gob.ar/tra_tramites_bandeja_am_documentos_download.php?codigo={cod_doc}&seccion={sec}&tramiteproductora={cod}"
+                                    r_dl = sesion.get(url_dl, timeout=15, verify=False)
+                                    if r_dl.status_code == 200 and len(r_dl.content) > 100 and not (b"<!DOCTYPE html" in r_dl.content[:150]):
+                                        with open(p1, "wb") as f_out:
+                                            f_out.write(r_dl.content)
+                                        target = p1
+
+                                if target and target.exists():
+                                    rutas.append(target)
+
+                            if rutas:
+                                res_ia = analizar_certificado_con_ia(rutas, api_key=api_key)
                                 res_clinico = evaluar_estado_vacunacion(fnac, res_ia)
 
                                 with sqlite3.connect(DB_PATH) as conn:
@@ -682,16 +762,55 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                                             observaciones_ia=excluded.observaciones_ia,
                                             fecha_analisis=excluded.fecha_analisis
                                     """, (
-                                        cod, "", res_clinico["edad_meses"],
-                                        res_ia.get("calidad_imagen", "MEDIA"), res_clinico["estado_esquema"],
-                                        1 if res_clinico["requiere_revision_humana"] else 0,
-                                        res_clinico["motivo_revision"],
+                                        cod, "", res_clinico.get("edad_meses", 0),
+                                        res_ia.get("calidad_imagen", "MEDIA"), res_clinico.get("estado_esquema", "REVISION_REQUERIDA"),
+                                        1 if res_clinico.get("requiere_revision_humana") else 0,
+                                        res_clinico.get("motivo_revision", ""),
                                         json.dumps(res_ia.get("dosis_aplicadas", []), ensure_ascii=False),
                                         json.dumps(res_clinico.get("vacunas_faltantes", []), ensure_ascii=False),
                                         res_ia.get("observaciones_adicionales", ""),
                                         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                                     ))
                                     conn.commit()
+                            else:
+                                # Sin certificados de vacunación en Mi3F
+                                res_clinico = evaluar_estado_vacunacion(fnac, {
+                                    "es_carnet_valido": False,
+                                    "calidad_imagen": "SIN_CERTIFICADO",
+                                    "requiere_revision_humana": True,
+                                    "motivo_revision": "Sin certificado adjunto en Mi3F",
+                                    "dosis_aplicadas": []
+                                })
+                                with sqlite3.connect(DB_PATH) as conn:
+                                    c2 = conn.cursor()
+                                    c2.execute("""
+                                        INSERT INTO auditoria_vacunas (
+                                            codigo_tramite, dni_menor, edad_meses, calidad_imagen,
+                                            estado_esquema, requiere_revision_humana, motivo_revision,
+                                            vacunas_detectadas_json, vacunas_faltantes_json, observaciones_ia,
+                                            fecha_analisis
+                                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                        ON CONFLICT(codigo_tramite) DO UPDATE SET
+                                            edad_meses=excluded.edad_meses,
+                                            calidad_imagen=excluded.calidad_imagen,
+                                            estado_esquema=excluded.estado_esquema,
+                                            requiere_revision_humana=excluded.requiere_revision_humana,
+                                            motivo_revision=excluded.motivo_revision,
+                                            vacunas_detectadas_json=excluded.vacunas_detectadas_json,
+                                            vacunas_faltantes_json=excluded.vacunas_faltantes_json,
+                                            observaciones_ia=excluded.observaciones_ia,
+                                            fecha_analisis=excluded.fecha_analisis
+                                    """, (
+                                        cod, "", res_clinico.get("edad_meses", 0),
+                                        "SIN_CERTIFICADO", "SOLICITAR_REENVIO",
+                                        1, "El solicitante no adjuntó certificado de vacunación en Mi3F.",
+                                        "[]",
+                                        json.dumps(res_clinico.get("vacunas_faltantes", []), ensure_ascii=False),
+                                        "El trámite no posee archivo en el apartado de vacunas en Mi3F.",
+                                        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                    ))
+                                    conn.commit()
+
                             time.sleep(1)
                         except Exception as err:
                             print(f"Error procesando lote {cod}: {err}")
