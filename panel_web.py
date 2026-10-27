@@ -187,6 +187,15 @@ class VacunacionAPIHandler(SimpleHTTPRequestHandler):
                 self.send_error(HTTPStatus.NOT_FOUND, "Imagen no encontrada ni disponible en Mi3F")
                 return
 
+        # API: Heartbeat / Health check para mantener activo Render
+        if path in ["/api/ping", "/healthz"]:
+            self._responder_json({
+                "status": "ok",
+                "servicio": "auditoria-vacunas3f",
+                "timestamp": datetime.now().isoformat()
+            })
+            return
+
         # API: Estado de la sesión Mi3F
         if path == "/api/estado_sesion":
             ses = obtener_sesion_requests()

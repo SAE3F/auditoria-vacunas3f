@@ -1704,6 +1704,11 @@
     cargarMetricas();
     cargarInscriptos();
     verificarEstadoSesion();
+
+    // Heartbeat automático: mantiene activo el servidor en Render cada 4 minutos mientras el auditor tenga la app abierta
+    setInterval(() => {
+      fetch('/api/ping').catch(() => {});
+    }, 4 * 60 * 1000);
   </script>
 </body>
 </html>
